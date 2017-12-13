@@ -1,6 +1,4 @@
-# bitx40
-
-BITX40 sketch for Raduino v2
+# Raduino v2 for BitX40
 
 This sketch implements digital BFO functionality to the BitX40. The original analog BFO oscillator is disabled. Instead we use the CLK0 output of the si5351 to generate the BFO signal, and inject it into the BitX40 board.
 The BFO frequency is now controlled by the sketch. The sketch will set the appropriate BFO frequency depending on the mode (LSB, USB). 
