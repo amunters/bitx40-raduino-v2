@@ -1,11 +1,16 @@
 # Raduino v2 for BitX40
 
 This sketch implements digital BFO functionality to the BitX40. The original analog BFO oscillator is disabled. Instead we use the CLK0 output of the si5351 to generate the BFO signal, and inject it into the BitX40 board.
-The BFO frequency is now controlled by the sketch. The sketch will set the appropriate BFO frequency depending on the mode (LSB, USB). 
+The BFO frequency is controlled by the sketch. The sketch will set the appropriate BFO frequency depending on the mode (LSB, USB, etc.). This has multiple advantages:
+- Adjustable BFO frequency allows for optimim alignment with the filter pass band in each mode
+- It is now possible to set the VFO to the high side of the IF in each mode => no images from 41m broadcast stations, less birdies
+- Possibility to add a 'clarifier' pot to the front panel
 
-**Note 1:** Unlike raduino v1, this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some minimal hardware modifications as outlined below are required. 
+**Note 1:** Unlike raduino v1, this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some minimal hardware modifications as outlined below are required.
 
-**Note 2:** The library [PinChangeInterrupt](https://playground.arduino.cc/Main/PinChangeInterrupt) is required for interrupt handling. Use your IDE to install it before compiling this sketch!
+**Note 2:** Hardware modifications used in v1 still work for v2. The wiring and pin connections are still the same, except the CAL wire (pin A2) is no longer used. 
+
+**Note 3:** The library [PinChangeInterrupt](https://playground.arduino.cc/Main/PinChangeInterrupt) is required for interrupt handling. Use your IDE to install it before compiling this sketch!
 
 ![Hardware mod overview](https://github.com/amunters/bitx40/blob/master/hardware%20modification%20overview.PNG) 
 
