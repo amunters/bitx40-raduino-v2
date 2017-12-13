@@ -6,9 +6,9 @@ The BFO frequency is controlled by the sketch. The sketch will set the appropria
 - It is now possible to set the VFO to the high side of the IF in each mode => no images from 41m broadcast stations, less birdies
 - Possibility to add a 'clarifier' pot to the front panel
 
-**Note 1:** Unlike [raduino v1](https://github.com/amunters/bitx40), this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some additional minimal hardware modifications as outlined below are required (v2 is not downward compatible with v1).
+**Note 1:** Unlike [raduino v1](https://github.com/amunters/bitx40/blob/master/README.md), this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some additional minimal hardware modifications as outlined below are required (v2 is not downward compatible with v1).
 
-**Note 2:** Existing hardware modifications as used in [raduino v1](https://github.com/amunters/bitx40) still work for v2. The wiring and pin connections are still the same, except the CAL wire (pin A2) is no longer used (v1 is upward compatible with v2).
+**Note 2:** Existing hardware modifications as used in [raduino v1](https://github.com/amunters/bitx40/blob/master/README.md) still work for v2. The wiring and pin connections are still the same, except the CAL wire (pin A2) is no longer used (v1 is upward compatible with v2).
 
 **Note 3:** The library [PinChangeInterrupt](https://playground.arduino.cc/Main/PinChangeInterrupt) is required for interrupt handling. Use your IDE to install it before compiling this sketch!
 
