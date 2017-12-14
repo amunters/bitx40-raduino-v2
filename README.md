@@ -2,7 +2,7 @@
 
 This sketch implements digital BFO functionality to the BitX40. The original analog BFO oscillator is disabled. Instead we use the CLK0 output of the si5351 to generate the BFO signal, and inject it into the BitX40 board.
 The BFO frequency is controlled by the sketch. The sketch will set the appropriate BFO frequency depending on the mode (LSB, USB, etc.). This has multiple advantages:
-- Adjustable BFO frequency allows for optimim alignment with the filter pass band in each mode
+- Adjustable BFO frequency allows for optimum alignment with the filter pass band in each mode
 - It is now possible to set the VFO to the high side of the IF in each mode => no images from 41m broadcast stations, less birdies
 - Possibility to add a 'clarifier' pot to the front panel
 
