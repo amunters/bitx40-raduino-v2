@@ -24,4 +24,4 @@ I develop and maintain ham radio software as a hobby and distribute it for free.
 
 ## Revision record
 
-v2.0  Initial release of Raduino v2 sketch for BitX40
+v2.00  Initial prototype (not stable yet, still WIP) of Raduino v2 sketch for BitX40
