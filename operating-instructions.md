@@ -68,7 +68,7 @@ The 5 pin header
 * GND (black)
 * GND (brown)
 * CLK2 (red)
-* +5V (orange)
+* +12V (orange)
 
 ## 10-TURN TUNING POT
 
@@ -250,7 +250,7 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
 
 #### VFO & BFO Calibration
 
-3 short presses - VFO frequency calibration
+3 short presses - VFO/BFO frequency calibration
 
   - use another transceiver to generate a carrier at a known frequency (for example 7100.0 kHz)
     (or ask a friend to transmit a carrier at a known frequency)
@@ -258,6 +258,11 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
     (the received signal may not yet be zero beat at this point)
   - go into the LSB calibration mode (3 short press)
   - using the tuning pot, adjust the correction value (ppm) for exactly zero beat
+  - press the Function Button again to save the setting
+  - using the tuning pot, adjust the BFO frequency for a natural sound in LSB mode
+  - press the Function Button again to save the setting
+  - the radio will now switch to USB mode. Ask your friend to do the same without changing the frequency.
+  - using the tuning pot, adjust the BFO frequency for a natural sound in USB mode
   - press the Function Button again to save the setting
 
 #### VFO Low/High
@@ -276,6 +281,10 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
     recommended value: 50 kHz for a 1-turn pot, 200 kHz for a 10-turn pot
     (if the radio is mainly used for CW: a pot span of 10-25 kHz is recommended)
   - press the FB again to save the setting
+  
+#### CLARIFIER ON/OFF
+
+6 short presses - Disabled (OFF) by default. If the CLARIFIER pot is installed, enable this function by setting this to ON.
 
 #### Exit Settings
  
