@@ -12,9 +12,9 @@ The BFO frequency is controlled by the sketch. The sketch will set the appropria
 
 **Note 3:** The library [PinChangeInterrupt](https://playground.arduino.cc/Main/PinChangeInterrupt) is required for interrupt handling. Use your IDE to install it before compiling this sketch!
 
-![Hardware mod overview](https://github.com/amunters/bitx40/blob/master/hardware%20modification%20overview.PNG) 
+![Hardware mod overview](hardware%20modification%20overview.PNG) 
 
-See the [operating and modification instructions](https://github.com/amunters/bitx40/blob/master/operating-instructions.md) for full details.
+See the [operating and modification instructions](operating-instructions.md) for full details.
 
 ## Donate
 
