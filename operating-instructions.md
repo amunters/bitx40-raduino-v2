@@ -34,8 +34,7 @@ Connect pin A0 (connector P1, black wire) via a 10K resistor to the output of U3
 
 When the PTT is not pressed (RX mode), the regulator will be off, so pin A0 will see 0V (LOW).
 When the PTT is pressed (TX mode), the regulator will be on, so pin A0 will see +5V (HIGH).
-The PTT SENSE is required for the CW, RIT, SPLIT functionality, and for disabling frequency updating during TX
-(to prevent "FM-ing"). If you don't install the PTT sense, LSB and USB operation will still work normally.
+The PTT SENSE line 'tells' the Arduino whether we are in RX or TX mode.
 
 ## PIN LAYOUT
 
