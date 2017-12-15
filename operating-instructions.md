@@ -33,7 +33,7 @@ The tuning range setting can be 'hard coded' by editing lines 34-36 and adapting
 
 ## PIN LAYOUT
 
-![Raduino pin layout](https://github.com/amunters/bitx40/blob/master/raduino_pin_layout.png)
+![Raduino pin layout](raduino_pin_layout.png)
 
 ### Connector P1 (8 pin)
 
