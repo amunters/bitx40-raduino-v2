@@ -5,13 +5,12 @@ it before compiling this sketch.
 
 **NOTE**: This v2 sketch only works if the following modifications are installed:
 - [the digital BFO mod](#digital-bfo-mod)
+- [the Function Button](#function-button)
 - [the PTT sense mod](#ptt-sense-wiring)
 
 After a version update all calibration data, drive level settings, etc will be reset to 'factory' values.
 Before updating note down your cal values etc. After the update use the Function Button to set them back again.
-Without any hardware modifications the sketch provides basic LSB functionality. Depending on the user's choice,
-additional functionality provided by this software can be activated by installing the related (minimal) hardware mods.
-See the table below showing which mods are required for each function. Details of each mod are described below.
+Depending on the user's choice, additional functionality provided by this software can be activated by installing the related (minimal) hardware mods. See the table below showing which mods are required for each function. Details of each mod are described below.
 
 ![Table of hardware modifications](hardware%20modification%20overview.PNG)
 
@@ -23,25 +22,21 @@ See the table below showing which mods are required for each function. Details o
 
 ![image of digital BFO mod](digital%20BFO%20mod.png)
 
-## 10-TURN TUNING POT
-
-The default frequency span of the standard supplied 1-turn tuning pot is only 50 kHz.
-If you install a 10-turn pot instead you can extend the span for full 40m band coverage.
-
-![Image of 10-turn pot hookup](Vishay%20100K%2C%2010-turn%20pot%20wire%20up.jpg)
-
-Using the Function Button, go to the SETTINGS menu and [set the desired pot span](#tuning-range).
-
 ## FUNCTION BUTTON WIRING:
 
 Connect a momentary pushbutton between pin A3 (connector P1, orange wire) and ground.
 Arduino's internal pull-up resistors are used, therefore do NOT install an external pull-up resistor!
 
-Don't have a Function Button (yet)?
-If you don't install a pushbutton then the basic LSB functions will still work.
-(of course you will miss the dual VFO, RIT, SPLIT, USB, CW, etc. then).
-Calibration can still be done in the old fashioned way by using the CAL button (connector P1, pin A2 - red wire).
-The tuning range setting can be 'hard coded' by editing lines 34-36 and adapting the values to your needs. After recompiling and uploading to your Raduino, momentarily switch the red CAL wire to ground to initialize the new settings.
+## PTT SENSE WIRING:
+
+Connect pin A0 (connector P1, black wire) via a 10K resistor to the output of U3 (LM7805 regulator) on the BITX40 board.
+
+![PTT Sense wiring](PTT%20SENSE%20wiring.png)
+
+When the PTT is not pressed (RX mode), the regulator will be off, so pin A0 will see 0V (LOW).
+When the PTT is pressed (TX mode), the regulator will be on, so pin A0 will see +5V (HIGH).
+The PTT SENSE is required for the CW, RIT, SPLIT functionality, and for disabling frequency updating during TX
+(to prevent "FM-ing"). If you don't install the PTT sense, LSB and USB operation will still work normally.
 
 ## PIN LAYOUT
 
@@ -82,17 +77,14 @@ The 5 pin header
 * +5V (orange)
 * ?? (yellow): Unused
 
+## 10-TURN TUNING POT
 
-## PTT SENSE WIRING:
+The default frequency span of the standard supplied 1-turn tuning pot is only 50 kHz.
+If you install a 10-turn pot instead you can extend the span for full 40m band coverage.
 
-Connect pin A0 (connector P1, black wire) via a 10K resistor to the output of U3 (LM7805 regulator) on the BITX40 board.
+![Image of 10-turn pot hookup](Vishay%20100K%2C%2010-turn%20pot%20wire%20up.jpg)
 
-![PTT Sense wiring](PTT%20SENSE%20wiring.png)
-
-When the PTT is not pressed (RX mode), the regulator will be off, so pin A0 will see 0V (LOW).
-When the PTT is pressed (TX mode), the regulator will be on, so pin A0 will see +5V (HIGH).
-The PTT SENSE is required for the CW, RIT, SPLIT functionality, and for disabling frequency updating during TX
-(to prevent "FM-ing"). If you don't install the PTT sense, LSB and USB operation will still work normally.
+Using the Function Button, go to the SETTINGS menu and [set the desired pot span](#tuning-range).
 
 ## CONNECTING A STRAIGHT MORSE KEY or 'TUNE' BUTTON:
 
