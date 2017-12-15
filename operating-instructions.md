@@ -1,4 +1,4 @@
-## User instructions for Raduino_v1.27
+## User instructions for Raduino_v2.00
 
 **IMPORTANT**: This sketch version requires the library ["PinChangeInterrupt"](https://playground.arduino.cc/Main/PinChangeInterrupt) for interrupt handling. Use your IDE to install
 it before compiling this sketch.
@@ -8,8 +8,7 @@ it before compiling this sketch.
 - [the Function Button](#function-button)
 - [the PTT sense mod](#ptt-sense-wiring)
 
-After a version update all calibration data, drive level settings, etc will be reset to 'factory' values.
-Before updating note down your cal values etc. After the update use the Function Button to set them back again.
+After a version update all user settings, calibration data, etc will be reset to 'factory' values.
 Depending on the user's choice, additional functionality provided by this software can be activated by installing the related (minimal) hardware mods. See the table below showing which mods are required for each function. Details of each mod are described below.
 
 ![Table of hardware modifications](hardware%20modification%20overview.PNG)
@@ -44,30 +43,26 @@ The PTT SENSE is required for the CW, RIT, SPLIT functionality, and for disablin
 
 ### Connector P1 (8 pin)
 
-* A0 (black): PTTSense
-* A1 (brown): Key, "dit"
-* A2 (red): CAL
-* A3 (orange): Function Button
+* input A0 (black): PTTSense
+* input A1 (brown): Key, "dit"
+* A2 (red): not used
+* input A3 (orange): Function Button
 * GND (yellow)
 * +5V (green)
-* A6 (blue): unused
-* A7 (purple): Tuning Pot
+* input A6 (blue): CLARIFIER pot
+* input A7 (purple): Tuning Pot
 
 ### Connector P3 (16 pin)
 
 The first 11 pins have no headers (pads only):
 
-* D7: TX-RX
-* D6: CW Carrier
-* D5: CW Side Tone
-* D4: CW SPOT Button
-* D3: Key, "dah"
-* ??: Unused
-* ??: Unused
-* ??: Unused
-* ??: Unused
-* ??: Unused
-* ??: Unused
+* output D7: TX-RX
+* output D6: CW Carrier
+* output D5: CW Side Tone
+* input D4: CW SPOT Button
+* input D3: Key, "dah"
+* output CLK0, BFO signal
+* GND
 
 The 5 pin header
 
@@ -75,7 +70,6 @@ The 5 pin header
 * GND (brown)
 * CLK2 (red)
 * +5V (orange)
-* ?? (yellow): Unused
 
 ## 10-TURN TUNING POT
 
@@ -130,6 +124,8 @@ The touch sensors are calibrated automatically at start up. If you want to recal
 while NOT touching the sensor pads. The sensor calibration data will be shown on the LCD display at start up.
 Note: When the touch keyer is enabled, normal paddle operation is not possible. If you want to use a standard paddle, disable the touch sensors by setting the sensitivity to 0 (touch sensor OFF).
 
+If the touch sensors are not detected at power up, the internal base capacitance may be just too low. In that case, adding small capacitors (1-10 pF) from A1 to ground and from D3 to ground may help.
+
 ## CW-CARRIER WIRING:
 
 This is required for CW operation (or when you want to generate a carrier for tuning)
@@ -171,7 +167,6 @@ This signal is used to drive an NPN transistor which is connected in parallel to
 bypass the PTT switch during CW operation. As as result the relays will be activated as long as D7 is HIGH.
 (Suggestion: If you have a combined microphone/PTT connector, the PTT bypass transistor can be soldered directly on the
 back of it).
-(The PTT bypass transistor may be used in the future for VOX functionality as well).
 
 ## CW SPOT/FINE TUNE Button:
 
@@ -254,9 +249,9 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
  - using the tuning pot, set the desired sidetone pitch
  - press the FB
 
-#### VFO Calibration, LSB
+#### VFO & BFO Calibration
 
-3 short presses - VFO frequency calibration in LSB mode
+3 short presses - VFO frequency calibration
 
   - use another transceiver to generate a carrier at a known frequency (for example 7100.0 kHz)
     (or ask a friend to transmit a carrier at a known frequency)
@@ -266,45 +261,13 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
   - using the tuning pot, adjust the correction value (ppm) for exactly zero beat
   - press the Function Button again to save the setting
 
-#### VFO Calibration, USB
-  
-4 short presses - VFO frequency calibration in USB mode
+#### VFO Low/High
 
-  - USB calibration depends on LSB calibration, so make sure that LSB calibration has been done first!
-  - use another transceiver to generate a carrier at a known frequency (for example 7100.0 kHz)
-    (or ask a friend to transmit a carrier at a known frequency)
-  - before going into the calibration mode, first set the VFO to 7100.0 kHz in USB mode
-    (the received signal may not yet be zero beat at this point)
-  - go into the USB calibration mode (4 short presses)
-  - using the tuning pot, adjust the USB offset for exactly zero beat
-  - press the Function Button again to save the setting
-
-#### VFO Drive Level, LSB
-  
-5 short presses - set VFO drive level in LSB mode
-
-  - tune to 7199 kHz, on most BITX40 transceivers a strong birdie is heard in LSB mode
-  - give 3 short presses to the FB to enter the VFO drive level adjustment
-  - the default drive level in LSB mode is 4mA
-  - using the tuning pot, try different drive levels (2,4,6,8 mA) to minimize the strength of the birdie
-  - press the FB again to save the setting
-
-#### VFO Drive Level, USB  
-
-6 short presses - set VFO drive level in USB mode
-
-  - tune to a weak signal
-  - give 4 short presses to the FB to enter the VFO drive level adjustment
-  - the default drive level in USB mode is 8mA
-  - using the tuning pot, try different drive levels (2,4,6,8 mA) for maximum signal to noise ratio
-  - press the FB again to save the setting
-  Extra Note: If the max. drive level of 8mA is still insufficient for USB mode, removal of C91 and C92 may help.
-  These caps attenuate the VFO signal at higher frequencies. They're actually only needed for the analog VFO
-  and can safely be removed if you use the Raduino DDS instead of the analog VFO.
+4 short presses - VFO Low/High
 
 #### Tuning Range
 
-7 short presses - set tuning range (min frequency, max frequency, pot span)
+5 short presses - set tuning range (min frequency, max frequency, pot span)
 
   - using the tuning pot, set the minimum tuning frequency and press the FB
   - using the tuning pot, set the maximum tuning frequency and press the FB again
