@@ -3,6 +3,13 @@
 **IMPORTANT**: This sketch version requires the library ["PinChangeInterrupt"](https://playground.arduino.cc/Main/PinChangeInterrupt) for interrupt handling. Use your IDE to install
 it before compiling this sketch.
 
+**NOTE**: This v2 sketch only works if the following modifications are installed:
+- [the digital BFO mod](#Digital-BFO-mod)
+- remove C91 and C92 (prevent attenuation of the VFO signal)
+- remove R101 (disable the original analog crystal BFO oscillator)
+- install a short shielded cable between the Raduino si5351 CLK0 output and pin 6 of T4 on the BitX40 main board
+- the PTT sense mod
+
 After a version update all calibration data, drive level settings, etc will be reset to 'factory' values.
 Before updating note down your cal values etc. After the update use the Function Button to set them back again.
 Without any hardware modifications the sketch provides basic LSB functionality. Depending on the user's choice,
@@ -10,6 +17,10 @@ additional functionality provided by this software can be activated by installin
 See the table below showing which mods are required for each function. Details of each mod are described below.
 
 ![Table of hardware modifications](hardware%20modification%20overview.PNG)
+
+## Digital BFO mod
+
+![image of digital BFO mod](digital BFO mod.png)
 
 ## 10-TURN TUNING POT
 
