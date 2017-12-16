@@ -4,7 +4,7 @@ This sketch implements digital BFO functionality to the BitX40. The original ana
 The BFO frequency is controlled by the sketch. The sketch will set the appropriate BFO frequency depending on the mode (LSB, USB, etc.). This has multiple advantages:
 - Adjustable BFO frequency allows for optimum alignment with the filter pass band in each mode
 - It is now possible to set the VFO to the high side of the IF in each mode => no images from 41m broadcast stations, less birdies
-- Possibility to add a 'clarifier' pot to the front panel
+- Possibility to add a 'clarifier' pot to the front panel. The behaviour is somewhat similar to 'IF shift' as found on many commercial radios.
 
 **Note 1:** Unlike [raduino v1](https://github.com/amunters/bitx40/blob/master/README.md), this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some additional minimal hardware modifications as outlined [below](operating-instructions.md) are required (v2 is not downward compatible with v1).
 
