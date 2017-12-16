@@ -1,6 +1,5 @@
 /**
    Raduino_v2.00 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
-   [unreleased prototype sketch - not stable yet]
 
    This source file is under General Public License version 3.
 
