@@ -51,8 +51,8 @@ The PTT SENSE line 'tells' the Arduino whether we are in RX or TX mode.
 ### Connector P1 (8 pin)
 
 * input A0 (black): PTTSense
-* input A1 (brown): Key, "dit"
-* A2 (red): not used
+* input A1 (brown): KEY (straight key) or "dit" (paddle)
+* A2 (red): not currently used
 * input A3 (orange): Function Button
 * GND (yellow)
 * +5V (green)
@@ -67,7 +67,7 @@ The first 11 pins have no headers (pads only):
 * output D6: CW Carrier
 * output D5: CW Side Tone
 * input D4: CW SPOT Button
-* input D3: Key, "dah"
+* input D3: "dah" (paddle)
 * output CLK0, BFO signal
 * GND
 
@@ -77,6 +77,7 @@ The 5 pin header
 * GND (brown)
 * CLK2 (red)
 * +12V (orange)
+* not used (yellow)
 
 ## 10-TURN TUNING POT
 
