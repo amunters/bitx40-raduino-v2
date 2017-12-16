@@ -252,13 +252,14 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
 
 3 short presses - VFO/BFO frequency calibration
 
-  - use another transceiver to generate a carrier at a known frequency (for example 7100.0 kHz)
+  - use another transceiver to generate a carrier at a known frequency (for example exactly 7100.000 kHz)
     (or ask a friend to transmit a carrier at a known frequency)
-  - before going into the calibration mode, first set the VFO to 7100.0 kHz in LSB mode
+  - first set the VFO to exactly 7100.000 kHz in LSB mode
     (the received signal may not yet be zero beat at this point)
-  - go into the LSB calibration mode (3 short press)
+  - press the Function Button
   - using the tuning pot, adjust the correction value (ppm) for exactly zero beat
   - press the Function Button again to save the setting
+  - ask your friend to transmit an LSB signal without changing the frequency
   - using the tuning pot, adjust the BFO frequency for a natural sound in LSB mode
   - press the Function Button again to save the setting
   - the radio will now switch to USB mode. Ask your friend to do the same without changing the frequency.
