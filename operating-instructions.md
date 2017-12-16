@@ -23,8 +23,8 @@ Depending on the user's choice, additional functionality provided by this softwa
 
 ## CLARIFIER
 
-Optionally install a 10K or 100K linear potentiometer on the front panel and connect the slider to pin A6 (connector P1, blue wire).
-Turning this pot will shift the BFO frequency in RX mode, which acts as a 'CLARIFIER' control.
+Optionally install a 10K or 100K linear potentiometer on the front panel and connect the slider to pin A6 (connector P1, blue wire). Tip: If you also install the [10-turn tuning pot](#10-turn-tuning-pot), then you can re-use the original 1-turn pot for the clarifier.
+Turning this pot will shift the BFO frequency in RX mode, which acts as a 'CLARIFIER' control. Although the principle is different, the behaviour is somewhat similar to 'IF-shift' as seen on many commercial rigs.
 The clarifier is disabled by default, go to the SETTINGS menu to [enable this function](#clarifier-enable).
 
 ![imgage of clarifier pot wiring](clarifier.png)
