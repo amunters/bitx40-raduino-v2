@@ -11,7 +11,7 @@ it before compiling this sketch.
 After a version update all user settings, calibration data, etc will be reset to 'factory' values.
 Depending on the user's choice, additional functionality provided by this software can be activated by installing the related (minimal) hardware mods. See the table below showing which mods are required for each function. Details of each mod are described below.
 
-![Table of hardware modifications](hardware%20modification%20overview.PNG)
+![Table of hardware modifications](hardware%20modification%20overview%20v2.PNG)
 
 ## Digital BFO mod
 
