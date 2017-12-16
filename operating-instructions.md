@@ -25,7 +25,7 @@ Depending on the user's choice, additional functionality provided by this softwa
 
 Optionally install a 10K or 100K linear potentiometer on the front panel and connect the slider to pin A6 (connector P1, blue wire).
 Turning this pot will shift the BFO frequency in RX mode, which acts as a 'CLARIFIER' control.
-The clarifier is disabled by default, go to the SETTINGS menu to [enable this function](#clarifier-on/off).
+The clarifier is disabled by default, go to the SETTINGS menu to [enable this function](#clarifier-enable).
 
 ![imgage of clarifier pot wiring](clarifier.png)
 
@@ -292,7 +292,7 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
     (if the radio is mainly used for CW: a pot span of 10-25 kHz is recommended)
   - press the FB again to save the setting
   
-#### CLARIFIER ON/OFF
+#### CLARIFIER ENABLE
 
 6 short presses - Disabled (OFF) by default. If the CLARIFIER pot is installed, enable this function by setting this to ON.
 
