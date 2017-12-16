@@ -309,8 +309,8 @@ To reset all user settings to "factory" values, press and hold the Function butt
 
 * VFO calibration value: 180 ppm
 * VFO setting: high side
-* BFO in LSB mode: 11998800 Hz
-* BFO in USB mode: 11996600 Hz
+* BFO in LSB mode: 11998750 Hz
+* BFO in USB mode: 11996650 Hz
 * CLARIFIER: disabled
 * Minimum frequency: 7000 kHz
 * Maximum frequency: 7300 kHz
