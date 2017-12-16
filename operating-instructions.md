@@ -82,7 +82,7 @@ The 5 pin header
 
 The default frequency span of the standard supplied 1-turn tuning pot is only 50 kHz.
 If you install a 10-turn pot instead you can extend the span for full 40m band coverage.
-Tip: You can re-use the original pot for the [CLARIFIER](#clarifier) control.
+Tip: Save the original one-turn pot and re-use it for the [CLARIFIER](#clarifier) control.
 
 ![Image of 10-turn pot hookup](Vishay%20100K%2C%2010-turn%20pot%20wire%20up.jpg)
 
