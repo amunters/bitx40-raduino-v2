@@ -23,8 +23,9 @@ Depending on the user's choice, additional functionality provided by this softwa
 
 ## CLARIFIER
 
-Optionally install a 10K linear potentiometer on the front panel and connect the slider to pin A6 (connector P1, blue wire).
+Optionally install a 10K or 100K linear potentiometer on the front panel and connect the slider to pin A6 (connector P1, blue wire).
 Turning this pot will shift the BFO frequency in RX mode, which acts as a 'CLARIFIER' control.
+The clarifier is disabled by default, go to the SETTINGS menu to [enable this function](#clarifier-on).
 
 ![imgage of clarifier pot wiring](clarifier.png)
 
@@ -81,6 +82,7 @@ The 5 pin header
 
 The default frequency span of the standard supplied 1-turn tuning pot is only 50 kHz.
 If you install a 10-turn pot instead you can extend the span for full 40m band coverage.
+Tip: You can re-use the original pot for the [CLARIFIER](#clarifier) control.
 
 ![Image of 10-turn pot hookup](Vishay%20100K%2C%2010-turn%20pot%20wire%20up.jpg)
 
