@@ -8,11 +8,11 @@ The BFO frequency is controlled by the sketch. The sketch will set the appropria
 
 **Note 1:** Unlike [raduino v1](https://github.com/amunters/bitx40/blob/master/README.md), this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some additional minimal hardware modifications as outlined below are required (v2 is not downward compatible with v1).
 
-**Note 2:** Existing hardware modifications as used in [raduino v1](https://github.com/amunters/bitx40/blob/master/README.md) still work for v2. The wiring and pin connections are still the same, except the CAL wire (pin A2) is no longer used (v1 is upward compatible with v2).
+**Note 2:** Upgrading from raduino_v1 to v2: Existing hardware modifications as used in [raduino v1](https://github.com/amunters/bitx40/blob/master/README.md) still work under v2. The wiring and pin connections are still the same, except the CAL wire (pin A2) is no longer used (v1 is upward compatible with v2).
 
 **Note 3:** The library [PinChangeInterrupt](https://playground.arduino.cc/Main/PinChangeInterrupt) is required for interrupt handling. Use your IDE to install it before compiling this sketch!
 
-![Hardware mod overview](hardware%20modification%20overview.PNG) 
+![Hardware mod overview](hardware%20modification%20overview%20v2.PNG) 
 
 See the [operating and modification instructions](operating-instructions.md) for full details.
 
