@@ -25,8 +25,7 @@
    The parameters values will be set to initial 'factory' settings after each
    version upgrade, or when the Function Button is kept pressed during power on.
    It is also possible to manually edit the values below. After that, initialize the
-   settings to the new values by keeping the F-Button pressed during power on, or by
-   switching the CAL wire to ground.
+   settings to the new values by keeping the F-Button pressed during power on.
 */
 
 // *** USER PARAMETERS ***
@@ -470,7 +469,7 @@ void updateDisplay() {
   memset(c, 0, sizeof(c));
   memset(b, 0, sizeof(b));
 
-  if (locked || RUNmode == RUN_FINETUNING) {
+  if (locked || RUNmode == RUN_FINETUNING || RUNmode == RUN_CALIBRATE) {
     ultoa((frequency + fine), b, DEC); // construct the frequency string
     strcpy(c, "");
   }
@@ -528,8 +527,6 @@ void bleep(int pitch, int duration, byte repeat) {
   }
 }
 
-bool calbutton = false;
-
 /**
    To use calibration sets the accurate readout of the tuned frequency
    To calibrate, follow these steps:
@@ -558,14 +555,19 @@ void calibrate() {
         u.vfo_high = false;
         mode = LSB;
         bfo_freq = u.bfo_freq;
+        u.vfoActive = false;   // switch to VFO A
+        vfoA = frequency;
+        shift = knob;
+        break;
+      case 2:
         current_setting = u.cal;
         shift = current_setting - knob;
         break;
-      case 2:
+      case 3:
         current_setting = u.bfo_freq;
         shift = current_setting - 11998000UL - knob;
         break;
-      case 3:
+      case 4:
         mode = USB;
         bfo_freq = u.bfo_freq + u.bfo_offset_usb;
         current_setting = u.bfo_offset_usb;
@@ -576,13 +578,19 @@ void calibrate() {
 
   switch (param) {
     case 1:
+      if (knob < 5)
+        shift = shift + 10;
+      else if (knob > 1020)
+        shift = shift - 10;
+      break;
+    case 2:
       u.cal = constrain(knob + shift, -10000, 10000);
       if (knob < 5 && u.cal > -10000)
         shift = shift - 10;
       else if (knob > 1020 && u.cal < 10000)
         shift = shift + 10;
       break;
-    case 2:
+    case 3:
       //generate values 11996 - 12000 kHz from the tuning pot
       bfo_freq = constrain(11998000UL + knob + shift, 11996000UL, 12000000UL);
       if (knob < 5 && bfo_freq > 11996000UL)
@@ -590,7 +598,7 @@ void calibrate() {
       else if (knob > 1020 && bfo_freq < 12000000UL)
         shift = shift + 10;
       break;
-    case 3:
+    case 4:
       //generate values -5000 - 0 from the tuning pot
       u.bfo_offset_usb = constrain(knob + shift, -5000, 0);
       if (knob < 5 && u.bfo_offset_usb > -5000)
@@ -604,13 +612,15 @@ void calibrate() {
   if (!digitalRead(FBUTTON)) {
     switch (param) {
       case 1:
-        bleep(600, 50, 1);
-        break;
+        vfoA = frequency;
       case 2:
-        u.bfo_freq = bfo_freq;
         bleep(600, 50, 1);
         break;
       case 3:
+        u.bfo_freq = bfo_freq;
+        bleep(600, 50, 1);
+        break;
+      case 4:
         RUNmode = RUN_NORMAL;
         mode = LSB;
         SetSideBand();
@@ -628,11 +638,16 @@ void calibrate() {
     firstrun = false;
     switch (param) {
       case 1:
+        //si5351bx_setfreq(2, u.bfo_freq - frequency);
+        //si5351bx_setfreq(0, u.bfo_freq);
+        //Serial.println(frequency);
+        frequency = vfoA - shift + knob;
+        setFrequency();
+        updateDisplay();
+        break;
+      case 2:
         si5351bx_vcoa = (SI5351BX_XTAL * SI5351BX_MSA) + u.cal * 100L;
-        if (u.vfo_high)
-          si5351bx_setfreq(2, u.bfo_freq + frequency);
-        else
-          si5351bx_setfreq(2, u.bfo_freq - frequency);
+        si5351bx_setfreq(2, u.bfo_freq - frequency);
         si5351bx_setfreq(0, u.bfo_freq);
         ltoa(u.cal * 100L / 875, b, DEC);
         strcpy(c, "corr ");
@@ -640,7 +655,7 @@ void calibrate() {
         strcat(c, " ppm");
         printLine(1, c);
         break;
-      case 2:
+      case 3:
         si5351bx_setfreq(0, bfo_freq);
         setFrequency();
         ultoa(bfo_freq, b, DEC);
@@ -649,7 +664,7 @@ void calibrate() {
         strcat(c, " Hz");
         printLine(1, c);
         break;
-      case 3:
+      case 4:
         bfo_freq = u.bfo_freq + u.bfo_offset_usb;
         si5351bx_setfreq(0, bfo_freq);
         setFrequency();
@@ -664,24 +679,17 @@ void calibrate() {
 }
 
 /**
-   The setFrequency is a little tricky routine, it works differently for USB and LSB
-   The BITX BFO is permanently set to lower sideband, (that is, the crystal frequency
-   is on the higher side slope of the crystal filter).
+   The setFrequency is a little tricky routine, it works differently for USB and LSB, depending
+   on whether the VFO is set to the low or to the high side of the IF.
 
-   LSB: The VFO frequency is subtracted from the BFO. Suppose the BFO is set to exactly 12 MHz
-   and the VFO is at 5 MHz. The output will be at 12.000 - 5.000  = 7.000 MHz
-   USB: The BFO is subtracted from the VFO. Makes the LSB signal of the BITX come out as USB!!
-   Here is how it will work:
-   Consider that you want to transmit on 14.000 MHz and you have the BFO at 12.000 MHz. We set
-   the VFO to 26.000 MHz. Hence, 26.000 - 12.000 = 14.000 MHz. Now, consider you are whistling a tone
-   of 1 KHz. As the BITX BFO is set to produce LSB, the output from the crystal filter will be 11.999 MHz.
-   With the VFO still at 26.000, the 14 Mhz output will now be 26.000 - 11.999 = 14.001, hence, as the
-   frequencies of your voice go down at the IF, the RF frequencies will go up!
+   By default the VFO is set to the high side of the IF (vfo_high = true). However this can be
+   changed to the low side in the SETTINGS menu.
+   Depending on whether the VFO is on the low or on the high side, we need to either add or substract
+   the BFO frequency.
 
-   Thus, setting the VFO on either side of the BFO will flip between the USB and LSB signals.
+   Depending on the mode (LSB,USB) we need to shift the BFO frequency to the correct sideband.
 
-   In addition we add some offset to USB mode so that the dial frequency is correct in both LSB and USB mode.
-   The amount of offset can be set in the SETTING menu as part of the calibration procedure.
+   An additional frequency offset can be added in RX when RIT is enabled.
 
    Furthermore we add/substract the sidetone frequency only when we receive CW, to assure zero beat
    between the transmitting and receiving station (RXshift)
@@ -1159,7 +1167,7 @@ void checkButton() {
             printLine(1, (char *)"Set CW params");
             break;
           case 13:
-            printLine(1, (char *)"LSB calibration");
+            printLine(1, (char *)"VFO/BFO calibr.");
             break;
           case 14:
             printLine(1, (char *)"VFO High/Low");
@@ -2319,7 +2327,7 @@ void setup() {
   pinMode(PULSE, OUTPUT);
   digitalWrite(PULSE, 0);
 
-  // when Fbutton or CALbutton is kept pressed during power up,
+  // when Fbutton is kept pressed during power up,
   // or after a version update,
   // then all settings will be restored to the standard "factory" values
   byte old_version;
