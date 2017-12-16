@@ -235,7 +235,7 @@ char c[17], b[10], printBuff[2][17];
 */
 
 #define PULSE (2)
-#define DAH (A2)
+#define DAH (3)
 #define SPOT (4)
 #define CW_TONE (5)
 #define CW_CARRIER (6)
