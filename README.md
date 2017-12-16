@@ -14,7 +14,7 @@ The BFO frequency is controlled by the sketch. The sketch will set the appropria
 
 ![Hardware mod overview](hardware%20modification%20overview%20v2.PNG) 
 
-See the [operating and modification instructions](operating-instructions.md) for full details.
+See the [operating and modification instructions]%20 for full details.
 
 ## Donate
 
