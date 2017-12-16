@@ -21,6 +21,13 @@ Depending on the user's choice, additional functionality provided by this softwa
 
 ![image of digital BFO mod](digital%20BFO%20mod.png)
 
+## CLARIFIER
+
+Optionally install a 10K linear potentiometer on the front panel and connect the slider to pin A6 (connector P1, blue wire).
+Turning this pot will shift the BFO frequency in RX mode, which acts as a 'CLARIFIER' control.
+
+![imgage of clarifier pot wiring](clarifier.png)
+
 ## FUNCTION BUTTON WIRING:
 
 Connect a momentary pushbutton between pin A3 (connector P1, orange wire) and ground.
