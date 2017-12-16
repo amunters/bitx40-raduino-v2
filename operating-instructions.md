@@ -305,12 +305,13 @@ All user settings are stored in EEPROM and retrieved during startup.
 
 ### Factory Settings
 
-To reset all used settings to "factory" values, press and hold the Function button during power on. The factory settings are:
+To reset all user settings to "factory" values, press and hold the Function button during power on. The factory settings are:
 
-* VFO calibration value: 0
-* VFO calibration offset (USB): 1500 Hz
-* VFO drive level (LSB): 4mA
-* VFO drive level (USB): 8mA
+* VFO calibration value: 180 ppm
+* VFO setting: high side
+* BFO in LSB mode: 11998800 Hz
+* BFO in USB mode: 11996600 Hz
+* CLARIFIER: disabled
 * Minimum frequency: 7000 kHz
 * Maximum frequency: 7300 kHz
 * Tuning pot span: 50 kHz
