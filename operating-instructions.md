@@ -1,4 +1,4 @@
-## User instructions for Raduino_v2.00
+## User instructions for Raduino_v2.01
 
 **IMPORTANT**: This sketch version requires the library ["PinChangeInterrupt"](https://playground.arduino.cc/Main/PinChangeInterrupt) for interrupt handling. Use your IDE to install
 it before compiling this sketch.
@@ -26,6 +26,7 @@ Depending on the user's choice, additional functionality provided by this softwa
 Optionally install a 10K or 100K linear potentiometer on the front panel and connect the slider to pin A6 (connector P1, blue wire). Tip: If you also install the [10-turn tuning pot](#10-turn-tuning-pot), then you can re-use the original 1-turn pot for the clarifier.
 Turning this pot will shift the BFO frequency in RX mode, which acts as a 'CLARIFIER' control. Although the principle is different, the behaviour is somewhat similar to 'IF-shift' as seen on many commercial rigs.
 The clarifier is disabled by default, go to the SETTINGS menu to [enable this function](#clarifier-enable).
+Note: Do not enable the clarifier when the CLAR pot is not present, as this will lead to random readings from the Arduino's analog input!
 
 ![imgage of clarifier pot wiring](clarifier.png)
 
@@ -262,6 +263,7 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
 
 3 short presses - VFO/BFO frequency calibration
 
+  - in calibration mode, the vfo will be temporarily set to the low side of the IF, it will be set back to the original setting when the calibration procedure has been completed.
   - use another transceiver to generate a carrier at a known frequency (for example exactly 7100.000 kHz)
     (or ask a friend to transmit a carrier at a known frequency)
   - first set the VFO to exactly 7100.000 kHz in LSB mode
