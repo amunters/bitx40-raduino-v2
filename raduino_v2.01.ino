@@ -1,5 +1,5 @@
 /**
-   Raduino_v2.00 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
+   Raduino_v2.01 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
 
    This source file is under General Public License version 3.
 
@@ -276,6 +276,7 @@ unsigned long vfoA;               // the frequency (Hz) of VFO A
 unsigned long vfoB;               // the frequency (Hz) of VFO B
 byte mode = LSB;                  // mode of the currently active VFO
 unsigned long bfo_freq;           // the frequency (Hz) of the BFO
+bool vfo_high;                    // whether the VFO is on the low or on the high side of the IF
 int clar_offset = 0;              // the offset applied to the BFO by the clarifier pot
 int clar_offset_old = 0;
 bool inTx = false;                // whether or not we are in transmit mode
@@ -527,21 +528,18 @@ void bleep(int pitch, int duration, byte repeat) {
 }
 
 /**
-   To use calibration sets the accurate readout of the tuned frequency
-   To calibrate, follow these steps:
-   1. Tune in a LSB signal that is at a known frequency.
-   2. Now, set the display to show the correct frequency,
-      the signal will no longer be tuned up properly
-   3. Use the "LSB calibrate" option in the "Settings" menu)
-   4. tune in the signal until it sounds proper.
-   5. Press the FButton
-   In step 4, when we say 'sounds proper' then, for a CW signal/carrier it means zero-beat
-   and for LSB it is the most natural sounding setting.
-
-   Calibration is an offset value that is added to the VFO frequency.
-   We store it in the EEPROM and read it in setup() when the Radiuno is powered up.
-
-   Then select the "USB calibrate" option in the "Settings" menu and repeat the same steps for USB mode.
+  Use another transceiver to generate a carrier at a known frequency (for example exactly 7100.000 kHz)
+  (or ask a friend to transmit a carrier at a known frequency)
+    - first set the VFO to exactly 7100.000 kHz in LSB mode (the received signal may not yet be zero beat at this point)
+    - press the Function Button
+    - using the tuning pot, adjust the correction value (ppm) for exactly zero beat
+    - press the Function Button again to save the setting
+    - ask your friend to transmit an LSB signal without changing the frequency
+    - using the tuning pot, adjust the BFO frequency for a natural sound in LSB mode
+    - press the Function Button again to save the setting
+    - the radio will now switch to USB mode. Ask your friend to do the same without changing the frequency.
+    - using the tuning pot, adjust the BFO frequency for a natural sound in USB mode
+    - press the Function Button again to save the setting
 */
 
 int shift, current_setting;
@@ -551,7 +549,9 @@ void calibrate() {
   if (firstrun) {
     switch (param) {
       case 1:
-        u.vfo_high = false;
+        vfo_high = u.vfo_high; // save the original vfo setting
+        u.vfo_high = false; // temporarily set the vfo to low side during calibration
+        RXshift = 0;
         mode = LSB;
         bfo_freq = u.bfo_freq;
         u.vfoActive = false;   // switch to VFO A
@@ -621,6 +621,7 @@ void calibrate() {
         break;
       case 4:
         RUNmode = RUN_NORMAL;
+        u.vfo_high = vfo_high; // restore the original vfo setting
         mode = LSB;
         SetSideBand();
         bleep(600, 50, 2);
@@ -637,9 +638,6 @@ void calibrate() {
     firstrun = false;
     switch (param) {
       case 1:
-        //si5351bx_setfreq(2, u.bfo_freq - frequency);
-        //si5351bx_setfreq(0, u.bfo_freq);
-        //Serial.println(frequency);
         frequency = vfoA - shift + knob;
         setFrequency();
         updateDisplay();
@@ -1058,11 +1056,10 @@ void keyer() {
    SETTINGS menu:
    1 short press: Set the 4 scan parameters (lower limit, upper limit, step size, step delay)
    2 short presses: Set the 6 CW parameters (key type, auto-space, touch sensitivity, semi-QSK on/off, QSK delay, sidetone pitch)
-   3 short presses: LSB calibration
-   4 short presses: USB calibration
-   5 short presses: Set VFO drive level in LSB mode
-   6 short presses: Set VFO drive level in USB mode
-   7 short presses: Set tuning range parameters (minimum dial frequency, max dial freq, tuning pot span)
+   3 short presses: VFO/BFO calibration
+   4 short presses: toggle VFO setting (high or low side of IF)
+   5 short presses: Set tuning range parameters (minimum dial frequency, max dial freq, tuning pot span)
+   6 short presses: enable/disable the CLARIFIER function
    long press: exit SETTINGS menu - go back to NORMAL menu
 */
 
@@ -1243,11 +1240,7 @@ void checkButton() {
       set_CWparams();
       break;
 
-    case 13: // calibrate the dial frequency in LSB
-      u.vfo_high = false;
-      RXshift = 0;
-      mode = LSB;
-      SetSideBand();
+    case 13: // calibrate the VFO and the BFO
       calibrate();
       break;
 
@@ -1260,7 +1253,7 @@ void checkButton() {
       SetSideBand();
       delay(700);
       bleep(600, 50, 2);
-      printLine(1, (char *)"");
+      printLine(1, (char *)"--- SETTINGS ---");
       break;
 
     case 15: // set the tuning pot range
@@ -1275,7 +1268,7 @@ void checkButton() {
         printLine(1, (char *)"CLAR disabled");
       delay(700);
       bleep(600, 50, 2);
-      printLine(1, (char *)"");
+      printLine(1, (char *)"--- SETTINGS ---");
       break;
   }
 }
@@ -2274,11 +2267,12 @@ void calibrate_touch_pads() {
 }
 
 // This routine is for the CLARIFIER control from the frontpanel
+// It is only executed when the CLARIFIER is enabled from the SETTINGS menu
 void clarifier() {
   if (inTx)
-    clar_offset = 0; // no offset during TX (clarifier works only in RX)
+    clar_offset = 0;                                 // no offset during TX (clarifier works only in RX)
   else
-    clar_offset = 2 * (analogRead(CLARIFIER) - 512);
+    clar_offset = 2 * (analogRead(CLARIFIER) - 512); // read the analog voltage from the CLAR pot (zero is centre position)
   if (abs(clar_offset - clar_offset_old) > 5) {
     SetSideBand();
     clar_offset_old = clar_offset;
@@ -2295,13 +2289,13 @@ void clarifier() {
 */
 
 void setup() {
-  u.raduino_version = 200;
-  strcpy (c, "Raduino v2.00");
+  u.raduino_version = 201;
+  strcpy (c, "Raduino v2.01");
 
   lcd.begin(16, 2);
 
   // Start serial and initialize the Si5351
-  Serial.begin(9600);
+  // Serial.begin(9600);
   analogReference(DEFAULT);
 
   //configure the function button to use the internal pull-up
@@ -2369,11 +2363,6 @@ void setup() {
     mode = u.mode_B;
   }
 
-  if (u.vfo_high)
-    printLine(1, (char *)"VFO HIGH");
-  else
-    printLine(1, (char *)"VFO LOW");
-
   if (mode > 1) // if in CW mode
     RXshift = u.CW_OFFSET;
 
@@ -2383,6 +2372,7 @@ void setup() {
 
   //display warning message when VFO calibration data was erased
   if (u.cal == CAL_VALUE) {
+    delay (1000);
     printLine(1, (char *)"VFO uncalibrated");
     delay(1000);
   }
