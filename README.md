@@ -27,8 +27,8 @@ I develop and maintain ham radio software as a hobby and distribute it for free.
 ## Revision record
 
 v2.01
-Fixed a bug that the VFO setting (high/low side of IF) didn't return to the original state after executing the calibration procedure
+- Fixed a bug that the VFO setting (high/low side of IF) didn't return to the original state after executing the calibration procedure
 
 v2.00
-Initial release of Raduino v2 sketch for BitX40
+- Initial release of Raduino v2 sketch for BitX40
 
