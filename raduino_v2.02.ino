@@ -1,5 +1,5 @@
 /**
-   Raduino_v2.01 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
+   Raduino_v2.02 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
 
    This source file is under General Public License version 3.
 
@@ -38,7 +38,7 @@
 
 // USB/LSB parameters
 #define CAL_VALUE 1575            // Initial VFO calibration value: 180 ppm
-#define BFO_OFFSET_USB -2100      // USB offset in Hz [accepted range -10000Hz to 10000Hz]
+#define BFO_OFFSET_USB -2200      // BFO offset for USB in Hz [accepted range -10000Hz to 10000Hz]
 
 // CW parameters
 #define CW_SHIFT 800              // RX shift in CW mode in Hz, equal to sidetone pitch [accepted range 200-1200 Hz]
@@ -68,7 +68,7 @@
 #define TX_DELAY 65               // delay (ms) to prevent spurious burst that is emitted when switching from RX to TX
 
 // digital BFO
-#define BFOFREQ (11998750UL)      // initial (uncalibrated) BFO frequency (Hz)
+#define BFOFREQ (11998800UL)      // initial (uncalibrated) BFO frequency (Hz)
 
 // all variables that will be stored in EEPROM are contained in this 'struct':
 struct userparameters {
@@ -554,6 +554,7 @@ void calibrate() {
         RXshift = 0;
         mode = LSB;
         bfo_freq = u.bfo_freq;
+        si5351bx_setfreq(0, u.bfo_freq);
         u.vfoActive = false;   // switch to VFO A
         vfoA = frequency;
         shift = knob;
@@ -2289,8 +2290,8 @@ void clarifier() {
 */
 
 void setup() {
-  u.raduino_version = 201;
-  strcpy (c, "Raduino v2.01");
+  u.raduino_version = 202;
+  strcpy (c, "Raduino v2.02");
 
   lcd.begin(16, 2);
 
