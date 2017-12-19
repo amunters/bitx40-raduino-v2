@@ -26,6 +26,10 @@ I develop and maintain ham radio software as a hobby and distribute it for free.
 
 ## Revision record
 
+v2.02
+- Fixed another bug in the calibration procedure
+- Slightly changed the initial BFO frequencies to 11998800 Hz (LSB) and 11996600 Hz (USB)
+
 v2.01
 - Fixed a bug that the VFO setting (high/low side of IF) didn't return to the original state after executing the calibration procedure
 
