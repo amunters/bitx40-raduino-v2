@@ -1,4 +1,4 @@
-## User instructions for Raduino_v2.01
+## User instructions for Raduino_v2.02
 
 **IMPORTANT**: This sketch version requires the library ["PinChangeInterrupt"](https://playground.arduino.cc/Main/PinChangeInterrupt) for interrupt handling. Use your IDE to install
 it before compiling this sketch.
@@ -311,8 +311,8 @@ To reset all user settings to "factory" values, press and hold the Function butt
 
 * VFO calibration value: 180 ppm
 * VFO setting: high side
-* BFO in LSB mode: 11998750 Hz
-* BFO in USB mode: 11996650 Hz
+* BFO in LSB mode: 11998800 Hz
+* BFO in USB mode: 11996600 Hz
 * CLARIFIER: disabled
 * Minimum frequency: 7000 kHz
 * Maximum frequency: 7300 kHz
