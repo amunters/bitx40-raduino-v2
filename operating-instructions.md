@@ -1,5 +1,7 @@
 ## User instructions for Raduino_v2.02
 
+First time builders: It is recommmended to first install the raduino v1 sketch and make sure that everything including the related mods work properly, before proceding with this v2 sketch.
+
 **IMPORTANT**: This sketch version requires the library ["PinChangeInterrupt"](https://playground.arduino.cc/Main/PinChangeInterrupt) for interrupt handling. Use your IDE to install
 it before compiling this sketch.
 
