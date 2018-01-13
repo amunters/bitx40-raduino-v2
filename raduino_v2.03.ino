@@ -1,5 +1,5 @@
 /**
-   Raduino_v2.02 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
+   Raduino_v2.03 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
 
    This source file is under General Public License version 3.
 
@@ -28,6 +28,8 @@
 */
 
 // *** USER PARAMETERS ***
+#define MY_CALLSIGN ""            // callsign here will display on line 2 when otherwise blank (tks Richard, VE3YSH)
+#define FAST_TUNE_DELAY 300       // fast tuning step delay in ms (when tuning pot is at the upper or lower limit)(tks Bob, N4FV)
 
 // tuning range parameters
 #define MIN_FREQ 7000000UL        // absolute minimum tuning frequency in Hz
@@ -38,7 +40,9 @@
 
 // USB/LSB parameters
 #define CAL_VALUE 1575            // Initial VFO calibration value: 180 ppm
-#define BFO_OFFSET_USB -2200      // BFO offset for USB in Hz [accepted range -10000Hz to 10000Hz]
+#define BFO_OFFSET_USB -2200      // BFO offset for USB in Hz [accepted range -3500Hz to -1250Hz]
+#define BFO_OFFSET_CWL -130       // BFO offset for CWL in Hz [accepted range -750 Hz to 0Hz]
+#define BFO_OFFSET_CWU -2070      // BFO offset for CWU in Hz [accepted range -3500Hz to -500Hz]
 
 // CW parameters
 #define CW_SHIFT 800              // RX shift in CW mode in Hz, equal to sidetone pitch [accepted range 200-1200 Hz]
@@ -62,7 +66,7 @@
 #define SCAN_STEP_DELAY 500       // Scan step delay in ms [accepted range 0-2000 ms]
 
 // Function Button
-#define CLICK_DELAY 750           // max time (in ms) between function button clicks
+#define CLICK_DELAY 1500          // max time (in ms) between function button clicks
 
 // RX-TX burst prevention
 #define TX_DELAY 65               // delay (ms) to prevent spurious burst that is emitted when switching from RX to TX
@@ -76,6 +80,8 @@ struct userparameters {
   int cal = CAL_VALUE;                             // VFO calibration value
   unsigned long bfo_freq = BFOFREQ;                // BFO frequency (Hz) for LSB mode
   int bfo_offset_usb = BFO_OFFSET_USB;             // BFO offset in Hz for USB mode
+  int bfo_offset_cwl = BFO_OFFSET_CWL;             // BFO offset in Hz for CWL mode
+  int bfo_offset_cwu = BFO_OFFSET_CWU;             // BFO offset in Hz for CWU mode
   bool clarifier_enabled = false;                  // whether or not the CLARIFIER pot is used
   byte wpm = CW_SPEED;                             // CW keyer speed (words per minute)
   bool semiQSK = SEMI_QSK;                         // whether semi QSK is ON or OFF
@@ -445,7 +451,7 @@ void i2cWriten(uint8_t reg, uint8_t *vals, uint8_t vcnt) {  // write array
    linenmbr = 1 is the lower line
 */
 
-void printLine(char linenmbr, char *c) {
+void printLine(char linenmbr, const char * const c) {
   if (strcmp(c, printBuff[linenmbr])) {     // only refresh the display when there was a change
     lcd.setCursor(0, linenmbr);             // place the cursor at the beginning of the selected line
     lcd.print(c);
@@ -548,7 +554,7 @@ void calibrate() {
 
   if (firstrun) {
     switch (param) {
-      case 1:
+      case 1: // VFO fine tuning
         vfo_high = u.vfo_high; // save the original vfo setting
         u.vfo_high = false; // temporarily set the vfo to low side during calibration
         RXshift = 0;
@@ -558,52 +564,81 @@ void calibrate() {
         u.vfoActive = false;   // switch to VFO A
         vfoA = frequency;
         shift = knob;
+        printLine(1, "VFO fine tuning");
         break;
-      case 2:
+      case 2: // calibrate the VFO
         current_setting = u.cal;
         shift = current_setting - knob;
         break;
-      case 3:
+      case 3: // calibrate BFO for LSB
         current_setting = u.bfo_freq;
-        shift = current_setting - 11998000UL - knob;
+        shift = current_setting - BFOFREQ - knob;
         break;
-      case 4:
+      case 4: // calibrate BFO for CWL
+        mode = CWL;
+        bfo_freq = u.bfo_freq;
+        current_setting = u.bfo_offset_cwl;
+        shift = current_setting - knob;
+        break;
+      case 5: // calibrate BFO for USB
         mode = USB;
         bfo_freq = u.bfo_freq + u.bfo_offset_usb;
         current_setting = u.bfo_offset_usb;
+        shift = current_setting - knob;
+        break;
+      case 6: // calibrate BFO for CWU
+        mode = CWU;
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwu;
+        current_setting = u.bfo_offset_cwu;
         shift = current_setting - knob;
         break;
     }
   }
 
   switch (param) {
-    case 1:
+    case 1: // fine tune the VFO
       if (knob < 5)
         shift = shift + 10;
       else if (knob > 1020)
         shift = shift - 10;
       break;
-    case 2:
+    case 2: // calibrate VFO
       u.cal = constrain(knob + shift, -10000, 10000);
       if (knob < 5 && u.cal > -10000)
         shift = shift - 10;
       else if (knob > 1020 && u.cal < 10000)
         shift = shift + 10;
       break;
-    case 3:
-      //generate values 11996 - 12000 kHz from the tuning pot
-      bfo_freq = constrain(11998000UL + knob + shift, 11996000UL, 12000000UL);
-      if (knob < 5 && bfo_freq > 11996000UL)
+    case 3: // calibrate BFO for LSB
+      //generate values 11997.5 - 12000.0 kHz from the tuning pot
+      bfo_freq = constrain(BFOFREQ + knob + shift, 11997500UL, 12000000UL);
+      if (knob < 5 && bfo_freq > 11997500UL)
         shift = shift - 10;
       else if (knob > 1020 && bfo_freq < 12000000UL)
         shift = shift + 10;
       break;
-    case 4:
-      //generate values -5000 - 0 from the tuning pot
-      u.bfo_offset_usb = constrain(knob + shift, -5000, 0);
-      if (knob < 5 && u.bfo_offset_usb > -5000)
+    case 4: // calibrate BFO for CWL
+      //generate offset values from the tuning pot (offset relative to BFO setting for LSB)
+      u.bfo_offset_cwl = constrain(knob + shift, -750, 0);
+      if (knob < 5 && u.bfo_offset_cwl > -750)
         shift = shift - 10;
-      else if (knob > 1020 && u.bfo_offset_usb < 0)
+      else if (knob > 1020 && u.bfo_offset_cwl < 0)
+        shift = shift + 10;
+      break;
+    case 5: // calibrate BFO for USB
+      //generate offset values from the tuning pot (offset relative to BFO setting for LSB)
+      u.bfo_offset_usb = constrain(knob + shift, -3500, -1250);
+      if (knob < 5 && u.bfo_offset_usb > -3500)
+        shift = shift - 10;
+      else if (knob > 1020 && u.bfo_offset_usb < -1250)
+        shift = shift + 10;
+      break;
+    case 6: // calibrate BFO for CWU
+      //generate offset values from the tuning pot (offset relative to BFO setting for LSB)
+      u.bfo_offset_cwu = constrain(knob + shift, u.bfo_offset_usb, u.bfo_offset_usb + 750);
+      if (knob < 5 && u.bfo_offset_cwu > u.bfo_offset_usb)
+        shift = shift - 10;
+      else if (knob > 1020 && u.bfo_offset_cwu < u.bfo_offset_usb + 750)
         shift = shift + 10;
       break;
   }
@@ -611,22 +646,32 @@ void calibrate() {
   // if Fbutton is pressed again we save the setting
   if (!digitalRead(FBUTTON)) {
     switch (param) {
-      case 1:
+      case 1: // fine tune the VFO
         vfoA = frequency;
-      case 2:
+      case 2: // calibrate VFO
         bleep(600, 50, 1);
         break;
-      case 3:
+      case 3: // calibrate BFO for LSB
         u.bfo_freq = bfo_freq;
         bleep(600, 50, 1);
         break;
-      case 4:
+      case 4: // calibrate BFO for CWL
+        digitalWrite(CW_CARRIER, 0);     // stop carrier
+        noTone(CW_TONE);                 // stop sidetone
+        bleep(600, 50, 1);
+        break;
+      case 5: // calibrate BFO for USB
+        bleep(600, 50, 1);
+        break;
+      case 6: // calibrate BFO for CWU
+        digitalWrite(CW_CARRIER, 0);     // stop carrier
+        noTone(CW_TONE);                 // stop sidetone
         RUNmode = RUN_NORMAL;
-        u.vfo_high = vfo_high; // restore the original vfo setting
+        u.vfo_high = vfo_high;           // restore the original vfo setting
         mode = LSB;
         SetSideBand();
         bleep(600, 50, 2);
-        printLine(1, (char *)"--- SETTINGS ---");
+        printLine(1, "--- SETTINGS ---");
         shiftBase(); //align the current knob position with the current frequency
         break;
     }
@@ -638,40 +683,61 @@ void calibrate() {
     RUNmode = RUN_CALIBRATE;
     firstrun = false;
     switch (param) {
-      case 1:
+      case 1: // fine tune the VFO
         frequency = vfoA - shift + knob;
         setFrequency();
         updateDisplay();
         break;
-      case 2:
+      case 2: // calibrate VFO
         si5351bx_vcoa = (SI5351BX_XTAL * SI5351BX_MSA) + u.cal * 100L;
         si5351bx_setfreq(2, u.bfo_freq - frequency);
         si5351bx_setfreq(0, u.bfo_freq);
         ltoa(u.cal * 100L / 875, b, DEC);
-        strcpy(c, "corr ");
+        strcpy(c, "VFO cal ");
         strcat(c, b);
         strcat(c, " ppm");
         printLine(1, c);
         break;
-      case 3:
-        si5351bx_setfreq(0, bfo_freq);
-        setFrequency();
-        ultoa(bfo_freq, b, DEC);
-        strcpy(c, "bfo ");
-        strcat(c, b);
-        strcat(c, " Hz");
-        printLine(1, c);
+      case 3: // calibrate BFO for LSB
         break;
-      case 4:
+      case 4: // calibrate BFO for CWL
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwl;
+        if (u.cap_sens != 0)
+          touch_key();
+        if (digitalRead(PTT_SENSE) && (!digitalRead(KEY) || (u.cap_sens != 0 && capaKEY))) {
+          digitalWrite(CW_CARRIER, 1);     // start carrier
+          tone(CW_TONE, u.CW_OFFSET);      // generate sidetone
+        }
+        else {
+          digitalWrite(CW_CARRIER, 0);     // stop carrier
+          noTone(CW_TONE);                 // stop sidetone
+        }
+        break;
+      case 5: // calibrate BFO for USB
         bfo_freq = u.bfo_freq + u.bfo_offset_usb;
-        si5351bx_setfreq(0, bfo_freq);
-        setFrequency();
-        ultoa(bfo_freq, b, DEC);
-        strcpy(c, "bfo ");
-        strcat(c, b);
-        strcat(c, " Hz");
-        printLine(1, c);
         break;
+      case 6: // calibrate BFO for CWU
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwu;      
+        if (u.cap_sens != 0)
+          touch_key();
+        if (digitalRead(PTT_SENSE) && (!digitalRead(KEY) || (u.cap_sens != 0 && capaKEY))) {
+          digitalWrite(CW_CARRIER, 1);     // start carrier
+          tone(CW_TONE, u.CW_OFFSET);      // generate sidetone
+        }
+        else {
+          digitalWrite(CW_CARRIER, 0);     // stop carrier
+          noTone(CW_TONE);                 // stop sidetone
+        }
+        break;
+    }
+    if (param > 2) {
+      si5351bx_setfreq(0, bfo_freq);
+      setFrequency();
+      ultoa(bfo_freq, b, DEC);
+      strcpy(c, "BFO ");
+      strcat(c, b);
+      strcat(c, " Hz");
+      printLine(1, c);
     }
   }
 }
@@ -707,7 +773,6 @@ void setFrequency() {
     else             // if we are in LOWER side band mode
       si5351bx_setfreq(2, (bfo_freq - frequency - RXshift - RIT - fine));
   }
-
   updateDisplay();
 }
 
@@ -733,12 +798,9 @@ void checkTX() {
 
     if (u.semiQSK) {
       mode = mode & B11111101;   // leave CW mode, return to SSB mode
-
-      if (!u.vfoActive)          // if VFO A is active
-        u.mode_A = mode;
-      else                       // if VFO B is active
-        u.mode_B = mode;
+      SetSideBand();
     }
+
     delay(TX_DELAY);             // wait till RX-TX burst is over
     shiftBase();                 // this will enable CLK2 again
     updateDisplay();
@@ -797,6 +859,7 @@ void checkCW() {
 
     if (u.semiQSK) {
       mode = mode | 2;                       // if semiQSK is on, switch to CW
+      SetSideBand();
     }
 
     if (u.key_type > 0 && mode & 2) {        // if mode is CW and if keyer is enabled
@@ -1032,12 +1095,12 @@ void keyer() {
     printLine(1, c);
   }
   else if (locked)
-    printLine(1, (char *)"dial is locked");
+    printLine(1, "dial is locked");
   else if (clicks >= 10)
-    printLine(1, (char *)"--- SETTINGS ---");
+    printLine(1, "--- SETTINGS ---");
   else {
     RIT_old = 0;
-    printLine(1, (char *)" ");
+    printLine(1, " ");
   }
 }
 
@@ -1095,7 +1158,7 @@ void checkButton() {
 
       if (locked && digitalRead(SPOT)) {
         bleep(600, 50, 1);
-        printLine(1, (char *)"");
+        printLine(1, MY_CALLSIGN);
         delay(500);
         locked = false;
         shiftBase();
@@ -1109,7 +1172,7 @@ void checkButton() {
           bleep(1200, 50, 1);
           locked = true;
           updateDisplay();
-          printLine(1, (char *)"dial is locked");
+          printLine(1, "dial is locked");
           delay(500);
           clicks = 0;
           pressed = false;
@@ -1138,51 +1201,51 @@ void checkButton() {
         switch (clicks) {
           //Normal menu options
           case 1:
-            printLine(1, (char *)"Swap VFOs");
+            printLine(1, "Swap VFOs");
             break;
           case 2:
-            printLine(1, (char *)"RIT ON");
+            printLine(1, "RIT ON");
             break;
           case 3:
-            printLine(1, (char *)"SPLIT ON/OFF");
+            printLine(1, "SPLIT ON/OFF");
             break;
           case 4:
-            printLine(1, (char *)"Switch mode");
+            printLine(1, "Switch mode");
             break;
           case 5:
-            printLine(1, (char *)"Start freq scan");
+            printLine(1, "Start freq scan");
             break;
           case 6:
-            printLine(1, (char *)"Monitor VFO A/B");
+            printLine(1, "Monitor VFO A/B");
             break;
 
           //SETTINGS menu options
           case 11:
-            printLine(1, (char *)"Set scan params");
+            printLine(1, "Set scan params");
             break;
           case 12:
-            printLine(1, (char *)"Set CW params");
+            printLine(1, "Set CW params");
             break;
           case 13:
-            printLine(1, (char *)"VFO/BFO calibr.");
+            printLine(1, "VFO/BFO calibr.");
             break;
           case 14:
-            printLine(1, (char *)"VFO High/Low");
+            printLine(1, "VFO High/Low");
             break;
           case 15:
-            printLine(1, (char *)"Set tuning range");
+            printLine(1, "Set tuning range");
             break;
           case 16:
-            printLine(1, (char *)"Clarifier ON/OFF");
+            printLine(1, "Clarifier ON/OFF");
             break;
         }
       }
       else if ((millis() - t1) > 600 && (millis() - t1) < 800 && clicks < 10) // long press: reset the VFOs
-        printLine(1, (char *)"Reset VFOs");
+        printLine(1, "Reset VFOs");
 
       if ((millis() - t1) > 3000 && clicks < 10) { // VERY long press: go to the SETTINGS menu
         bleep(1200, 150, 3);
-        printLine(1, (char *)"--- SETTINGS ---");
+        printLine(1, "--- SETTINGS ---");
         clicks = 10;
       }
 
@@ -1190,7 +1253,7 @@ void checkButton() {
         bleep(1200, 150, 3);
         clicks = -1;
         pressed = false;
-        printLine(1, (char *)" --- NORMAL ---");
+        printLine(1, " --- NORMAL ---");
         delay(700);
       }
     }
@@ -1222,13 +1285,13 @@ void checkButton() {
       RUNmode = RUN_SCAN;
       TimeOut = millis() + u.scan_step_delay;
       frequency = u.scan_start_freq * 1000L;
-      printLine(1, (char *)"freq scanning");
+      printLine(1, "freq scanning");
       break;
 
     case 6: // Monitor mode
       RUNmode = RUN_MONITOR;
       TimeOut = millis() + u.scan_step_delay;
-      printLine(1, (char *)"A/B monitoring");
+      printLine(1, "A/B monitoring");
       break;
 
     // SETTINGS MENU
@@ -1248,13 +1311,13 @@ void checkButton() {
     case 14: // toggle VFO HIGH/LOW
       u.vfo_high = !u.vfo_high;
       if (u.vfo_high)
-        printLine(1, (char *)"VFO HIGH");
+        printLine(1, "VFO HIGH");
       else
-        printLine(1, (char *)"VFO LOW");
+        printLine(1, "VFO LOW");
       SetSideBand();
       delay(700);
       bleep(600, 50, 2);
-      printLine(1, (char *)"--- SETTINGS ---");
+      printLine(1, "--- SETTINGS ---");
       break;
 
     case 15: // set the tuning pot range
@@ -1264,12 +1327,12 @@ void checkButton() {
     case 16: // enable/disable CLARIFIER
       u.clarifier_enabled = !u.clarifier_enabled;
       if (u.clarifier_enabled)
-        printLine(1, (char *)"CLAR enabled");
+        printLine(1, "CLAR enabled");
       else
-        printLine(1, (char *)"CLAR disabled");
+        printLine(1, "CLAR disabled");
       delay(700);
       bleep(600, 50, 2);
-      printLine(1, (char *)"--- SETTINGS ---");
+      printLine(1, "--- SETTINGS ---");
       break;
   }
 }
@@ -1290,7 +1353,7 @@ void swapVFOs() {
     if (!u.splitOn)
       mode = u.mode_B;     // don't change the mode when SPLIT is on
   }
-
+  SetSideBand();
   if (!inTx && mode > 1)
     RXshift = u.CW_OFFSET; // add RX shift when we are receiving in CW mode
   else
@@ -1327,7 +1390,7 @@ void toggleMode() {
   if (!u.semiQSK)
     mode = (mode + 1) & 3; // rotate through LSB-USB-CWL-CWU
   else
-    mode = (mode + 1) & 1; // switch between LSB and USB only (no CW)
+    mode = mode xor 1;     // switch between LSB and USB (or between CWL and CWU) (tks Michael, VE3WMB)
 
   if (mode & 2)            // if we are in CW mode
     RXshift = u.CW_OFFSET;
@@ -1338,18 +1401,39 @@ void toggleMode() {
 
 void SetSideBand() {
   if (u.vfo_high) {
-    if (mode & 1)           // if we are in UPPER side band mode
-      bfo_freq = u.bfo_freq - clar_offset;
-    else                    // if we are in LOWER side band mode
-      bfo_freq = u.bfo_freq + u.bfo_offset_usb + clar_offset;
+    switch (mode) {
+      case USB:
+        bfo_freq = u.bfo_freq - clar_offset;
+        break;
+      case LSB:
+        bfo_freq = u.bfo_freq + u.bfo_offset_usb + clar_offset;
+        break;
+      case CWU:
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwl - clar_offset;
+        break;
+      case CWL:
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwu + clar_offset;
+        break;
+    }
   }
   else {
-    if (mode & 1)           // if we are in UPPER side band mode
-      bfo_freq = u.bfo_freq + u.bfo_offset_usb + clar_offset;
-    else                    // if we are in LOWER side band mode
-      bfo_freq = u.bfo_freq - clar_offset;
+    switch (mode) {
+      case LSB:
+        bfo_freq = u.bfo_freq - clar_offset;
+        break;
+      case USB:
+        bfo_freq = u.bfo_freq + u.bfo_offset_usb + clar_offset;
+        break;
+      case CWL:
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwl - clar_offset;
+        break;
+      case CWU:
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwu + clar_offset;
+        break;
+    }
   }
   si5351bx_setfreq(0, bfo_freq);
+
   setFrequency();
   if (!u.vfoActive)        // if VFO A is active
     u.mode_A = mode;
@@ -1359,7 +1443,7 @@ void SetSideBand() {
 
 // resetting the VFO's will set both VFO's to the current frequency and mode
 void resetVFOs() {
-  printLine(1, (char *)"VFO A=B !");
+  printLine(1, "VFO A=B !");
   vfoA = vfoB = frequency;
   u.mode_A = u.mode_B = mode;
   updateDisplay();
@@ -1431,7 +1515,7 @@ void set_tune_range() {
       case 3:
         RUNmode = RUN_NORMAL;
         bleep(600, 50, 2);
-        printLine(1, (char *)"--- SETTINGS ---");
+        printLine(1, "--- SETTINGS ---");
         shiftBase(); //align the current knob position with the current frequency
         break;
     }
@@ -1594,7 +1678,7 @@ void set_CWparams() {
       case 6:
         RUNmode = RUN_NORMAL;
         bleep(600, 50, 2);
-        printLine(1, (char *)"--- SETTINGS ---");
+        printLine(1, "--- SETTINGS ---");
         shiftBase(); //align the current knob position with the current frequency
         break;
     }
@@ -1637,7 +1721,7 @@ void set_CWparams() {
         if (u.cap_sens == 0)
           strcpy(c, "touch keyer OFF");
         else {
-          printLine(0, (char *)"Touch sensor");
+          printLine(0, "Touch sensor");
           itoa((u.cap_sens), b, DEC);
           strcpy(c, "sensitivity ");
           strcat(c, b);
@@ -1759,7 +1843,7 @@ void scan_params() {
       case 4: // save the scan step delay
         RUNmode = RUN_NORMAL;
         bleep(600, 50, 2);
-        printLine(1, (char *)"--- SETTINGS ---");
+        printLine(1, "--- SETTINGS ---");
         shiftBase(); //align the current knob position with the current frequency
         break;
     }
@@ -1917,8 +2001,8 @@ void doTuning() {
   int knob = analogRead(ANALOG_TUNING) * 100000 / 10230; // get the current tuning knob position
 
   // tuning is disabled during TX (only when PTT sense line is installed)
-  if (inTx && clicks < 10 && abs(knob - old_knob) > 20 && !locked) {
-    printLine(1, (char *)"dial is locked");
+  if (inTx && clicks < 10 && abs(knob - old_knob) > 42 && !locked) {
+    printLine(1, "dial is locked");
     shiftBase();
     firstrun = true;
     return;
@@ -1940,8 +2024,8 @@ void doTuning() {
         baseTune = baseTune - 10000UL; // fast tune down in 10 kHz steps
       frequency = baseTune + (unsigned long)knob * (unsigned long)u.POT_SPAN / 10UL;
       if (clicks < 10)
-        printLine(1, (char *)"<<<<<<<"); // tks Paul KC8WBK
-      delay(300);
+        printLine(1, "<<<<<<<"); // tks Paul KC8WBK
+      delay(FAST_TUNE_DELAY);
     }
     if (frequency <= u.LOWEST_FREQ)
       baseTune = frequency = u.LOWEST_FREQ;
@@ -1960,8 +2044,8 @@ void doTuning() {
         baseTune = baseTune + 10000UL; // fast tune up in 10 kHz steps
       frequency = baseTune + (unsigned long)knob * (unsigned long)u.POT_SPAN / 10UL;
       if (clicks < 10)
-        printLine(1, (char *)"         >>>>>>>"); // tks Paul KC8WBK
-      delay(300);
+        printLine(1, "         >>>>>>>"); // tks Paul KC8WBK
+      delay(FAST_TUNE_DELAY);
     }
     if (frequency >= u.HIGHEST_FREQ) {
       baseTune = u.HIGHEST_FREQ - (u.POT_SPAN * 1000UL);
@@ -2043,9 +2127,9 @@ void finetune() {
     }
 
     if (mode & 2)
-      printLine(1, (char *)"SPOT + FINE TUNE");
+      printLine(1, "SPOT + FINE TUNE");
     else
-      printLine(1, (char *)"FINE TUNE");
+      printLine(1, "FINE TUNE");
 
     fine_old = fine;
   }
@@ -2060,14 +2144,14 @@ void finetune() {
     shiftBase();
     old_knob = knob_position();
     if (clicks == 10)
-      printLine(1, (char *)"--- SETTINGS ---");
+      printLine(1, "--- SETTINGS ---");
   }
 }
 
 void factory_settings() {
 
-  printLine(0, (char *)"loading standard");
-  printLine(1, (char *)"settings...");
+  printLine(0, "loading standard");
+  printLine(1, "settings...");
 
   EEPROM.put(0, u); // save all user parameters to EEPROM
   delay(1000);
@@ -2240,11 +2324,11 @@ void calibrate_touch_pads() {
   if (base_sens_KEY == 255 || base_sens_DAH == 255 || base_sens_KEY == 1 || base_sens_DAH == 1) {   // if inputs are still triggered even with max delay (255 us)
     CapTouch_installed = false;                         // then the base capacitance is too high (or the mod is not installed) so we can't use the touch keyer
     u.cap_sens = 0;                                     // turn capacitive touch keyer OFF
-    printLine(0, (char *)"touch sensors");
-    printLine(1, (char *)"not detected");
+    printLine(0, "touch sensors");
+    printLine(1, "not detected");
   }
   else if (u.cap_sens > 0) {
-    printLine(0, (char *)"touch key calibr");
+    printLine(0, "touch key calibr");
     strcpy(c, "DIT ");
     itoa(base_sens_KEY, b, DEC);
     strcat(c, b);
@@ -2255,7 +2339,7 @@ void calibrate_touch_pads() {
     printLine(1, c);
   }
   else
-    printLine(1, (char *)"touch keyer OFF");
+    printLine(1, "touch keyer OFF");
 
   delay(2000);
   updateDisplay();
@@ -2290,8 +2374,8 @@ void clarifier() {
 */
 
 void setup() {
-  u.raduino_version = 202;
-  strcpy (c, "Raduino v2.02");
+  u.raduino_version = 203;
+  strcpy (c, "Raduino v2.03");
 
   lcd.begin(16, 2);
 
@@ -2349,8 +2433,8 @@ void setup() {
   si5351bx_init();
   si5351bx_vcoa = (SI5351BX_XTAL * SI5351BX_MSA) + u.cal * 100L; // apply the calibration correction factor
 
-  si5351bx_drive[2] = 0;  // minimum VFO drive level
-  si5351bx_drive[0] = 0;  // minimum BFO drive level for less tuning clicks
+  si5351bx_drive[2] = 0;  // VFO drive level (0=2mA, 1=4mA, 2=6mA, 3=8mA)
+  si5351bx_drive[0] = 0;  // BFO drive level (0=2mA, 1=4mA, 2=6mA, 3=8mA)
 
   vfoA = u.vfoA;
   vfoB = u.vfoB;
@@ -2374,7 +2458,7 @@ void setup() {
   //display warning message when VFO calibration data was erased
   if (u.cal == CAL_VALUE) {
     delay (1000);
-    printLine(1, (char *)"VFO uncalibrated");
+    printLine(1, "VFO uncalibrated");
     delay(1000);
   }
 
@@ -2393,7 +2477,7 @@ void loop() {
         if (clicks == 0 || clicks == 10)
           EEPROM.put(0, u); // save all user parameters to EEPROM
         if (clicks == 0 && !ritOn && !locked)
-          printLine(1, (char *)"");
+          printLine(1, MY_CALLSIGN);
       }
       checkCW();
       checkTX();
