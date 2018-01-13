@@ -1,4 +1,4 @@
-## User instructions for Raduino_v2.02
+## User instructions for Raduino_v2.03
 
 First time builders: It is recommmended to first install the [raduino v1](https://github.com/amunters/bitx40) sketch and make sure that everything including the related mods work properly, before proceding with this v2 sketch.
 
@@ -154,7 +154,7 @@ As a result a CW carrier will be generated.
 Note: If the carrier is not generated at full output power, you may need to reduce the 4.7K series resistor to a lower value
 for more drive. However try to keep it as high as possible to keep a clean CW signal. Never use a resistor less than 1K!
 Extra tip: For tuning purposes a reduced carrier is usually desired. You can optionally connect a 100K pot in series with the
-10K resistor, this will allow you to reduce the strength of the carrier to a suitable level.
+4.7K resistor, this will allow you to reduce the strength of the carrier to a suitable level.
 
 The CW-CARRIER is only required for CW functionality. If you don't install this line everything else
 will still work normally.
@@ -268,20 +268,32 @@ To enter SETTINGS menu, press and hold the Function Button for a VERY long (>3 s
 
 3 short presses - VFO/BFO frequency calibration
 
-  - in calibration mode, the vfo will be temporarily set to the low side of the IF, it will be set back to the original setting when the calibration procedure has been completed.
-  - use another transceiver to generate a carrier at a known frequency (for example exactly 7100.000 kHz)
-    (or ask a friend to transmit a carrier at a known frequency)
-  - first set the VFO to exactly 7100.000 kHz in LSB mode
-    (the received signal may not yet be zero beat at this point)
-  - press the Function Button
-  - using the tuning pot, adjust the correction value (ppm) for exactly zero beat
-  - press the Function Button again to save the setting
-  - ask your friend to transmit an LSB signal without changing the frequency
-  - using the tuning pot, adjust the BFO frequency for a natural sound in LSB mode
-  - press the Function Button again to save the setting
-  - the radio will now switch to USB mode. Ask your friend to do the same without changing the frequency.
-  - using the tuning pot, adjust the BFO frequency for a natural sound in USB mode
-  - press the Function Button again to save the setting
+In calibration mode, the vfo will be temporarily set to the low side of the IF, it will be set back to the original setting when the calibration procedure has been completed.
+Also while in calibration mode, the CW RX offset is temporarily disabled and Semi-QSK is turned off. To transmit a CW signal will require closure of the PTT switch to go into transmit and then CW key down to generate a carrier.
+
+- Use another transceiver to generate a CW carrier at a known frequency (for example exactly 7100.000 kHz) (or ask a friend to transmit a carrier at a known frequency)
+- First set the VFO to exactly 7100.000 kHz in LSB mode (the received signal may not yet be zero beat at this point)
+- Press the Function Button
+- Using the tuning pot, adjust the correction value (ppm) for exactly zero beat (i.e. turn the tuning knob on the Bitx40 so that the frequency of the received audio tone decreases down to 0 Hz, then stop)
+- Press the Function Button again to save the setting
+- Ask your friend to transmit an LSB signal without changing the frequency
+- Using the tuning pot, adjust the BFO frequency for a natural sound in LSB mode
+- Connect a  wattmeter (in its lowest power setting) and a dummy load  to the Bitx40. 
+- Close the PTT button and fine-tune the BFO setting for zero watts out, with no audio input to the microphone. This ensures that BFO is set properly to suppress the carrier. 
+- Press the Function Button again to save the setting
+- The radio will now switch to CWL mode. 
+- With the dummy load and wattmeter still connected to the rig, close both the PTT button and CW key and adjust the BFO frequency for full power out as measured on the low power setting on the wattmeter.
+- Close just the PTT button and fine-tune the BFO setting for minimal carrier power (it should be possible to achieve < 10 mW of carrier on PTT closure, while still maintaining very close to full power output with both PTT and CW Key closed). 
+- Press the Function Button again to save the setting
+- The radio will now switch to USB mode.
+- Ask your friend to transmit a USB signal without changing the frequency
+- Using the tuning pot, adjust the BFO frequency for a natural sound in USB mode
+- Using a dummy load and wattmeter in its lowest power setting connected to the Bitx40, close the PTT button and fine-tune the BFO setting for zero watts out, with no audio input to the microphone. This ensures that the BFO is set properly to suppress the carrier. 
+- Press the Function Button again to save the setting
+- The radio will now switch to CWU mode. 
+- With a dummy load and wattmeter connected to the rig, close the PTT button and CW key and adjust for full power out as measured on the low power setting on the wattmeter. 
+- Close just the PTT button and fine-tune the BFO setting for minimal carrier power (it should be possible to achieve < 10 mW of carrier on PTT closure, while still maintaining very close to full power output with both PTT and CW Key closed). 
+- Press the Function Button again to save the setting
 
 #### VFO Low/High
 
