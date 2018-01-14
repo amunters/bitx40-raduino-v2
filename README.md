@@ -26,6 +26,14 @@ I develop and maintain ham radio software as a hobby and distribute it for free.
 
 ## Revision record
 
+v2.03
+- Added BFO calibration parameters for CWL and CWU to optimize the performance in CW mode
+- Revised and improved the calibration procedures (tks Michael, VE3WMB)
+- Corrected a bug that in certain scenarios mode switching did not function correctly
+- Updated the instructions for the CW-CARRIER mod: Advise to use a 4.7K resistor instead of 10K in order to ensure full output power in CW mode
+- Added capability (see line 31) to display the user's callsign on the second line of the LCD
+- Added capability (see line 32) to adjust the delay time for 'fast tuning' (when the tuning pot is at either end of the range)
+
 v2.02
 - Fixed another bug in the calibration procedure
 - Slightly changed the initial BFO frequencies to 11998800 Hz (LSB) and 11996600 Hz (USB)
