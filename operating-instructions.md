@@ -32,7 +32,7 @@ Turning this pot will shift the BFO frequency in RX mode, which acts as a Passba
 Passband Tuning is disabled by default, go to the SETTINGS menu to [enable this function](#pbt-enable).
 Note: Do not enable PBT when the PBT pot is not installed, as this will lead to random readings from the Arduino's analog input!
 
-![imgage of PBT pot wiring](clarifier.png)
+![imgage of PBT pot wiring](PBT.png)
 
 ## FUNCTION BUTTON WIRING:
 
