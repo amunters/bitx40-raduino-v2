@@ -1,5 +1,5 @@
 /**
-   Raduino_v2.03 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
+   Raduino_v2.04 for BITX40 - Allard Munters PE1NWL (pe1nwl@gooddx.net)
 
    This source file is under General Public License version 3.
 
@@ -2016,7 +2016,7 @@ void doTuning() {
   // the knob is fully on the low end, do fast tune: move down by 10 Khz and wait for 300 msec
   // if the POT_SPAN is very small (less than 25 kHz) then use 1 kHz steps instead
 
-  if (knob == 0) {
+  if (knob == 0 && frequency != u.LOWEST_FREQ) {
     if (frequency > u.LOWEST_FREQ) {
       if (u.POT_SPAN < 25)
         baseTune = baseTune - 1000UL; // fast tune down in 1 kHz steps
@@ -2027,7 +2027,7 @@ void doTuning() {
         printLine(1, "<<<<<<<"); // tks Paul KC8WBK
       delay(FAST_TUNE_DELAY);
     }
-    if (frequency <= u.LOWEST_FREQ)
+    if (frequency < u.LOWEST_FREQ)
       baseTune = frequency = u.LOWEST_FREQ;
     setFrequency();
     old_knob = 0;
@@ -2036,7 +2036,7 @@ void doTuning() {
   // the knob is full on the high end, do fast tune: move up by 10 Khz and wait for 300 msec
   // if the POT_SPAN is very small (less than 25 kHz) then use 1 kHz steps instead
 
-  else if (knob == 10000) {
+  else if (knob == 10000 && frequency != u.HIGHEST_FREQ) {
     if (frequency < u.HIGHEST_FREQ) {
       if (u.POT_SPAN < 25)
         baseTune = baseTune + 1000UL; // fast tune up in 1 kHz steps
@@ -2047,7 +2047,7 @@ void doTuning() {
         printLine(1, "         >>>>>>>"); // tks Paul KC8WBK
       delay(FAST_TUNE_DELAY);
     }
-    if (frequency >= u.HIGHEST_FREQ) {
+    if (frequency > u.HIGHEST_FREQ) {
       baseTune = u.HIGHEST_FREQ - (u.POT_SPAN * 1000UL);
       frequency = u.HIGHEST_FREQ;
     }
@@ -2374,8 +2374,8 @@ void clarifier() {
 */
 
 void setup() {
-  u.raduino_version = 203;
-  strcpy (c, "Raduino v2.03");
+  u.raduino_version = 204;
+  strcpy (c, "Raduino v2.04");
 
   lcd.begin(16, 2);
 
