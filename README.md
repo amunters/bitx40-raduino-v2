@@ -26,6 +26,9 @@ I develop and maintain ham radio software as a hobby and distribute it for free.
 
 ## Revision record
 
+v2.04
+- improved the code so that the si5351 does not keep receiving tuning updates once the frequency has reached the upper or lower limit
+
 v2.03
 - Added BFO calibration parameters for CWL and CWU to optimize the performance in CW mode
 - Revised and improved the calibration procedures (tks Michael, VE3WMB)
