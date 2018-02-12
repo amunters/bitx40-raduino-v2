@@ -82,7 +82,7 @@ struct userparameters {
   int bfo_offset_usb = BFO_OFFSET_USB;             // BFO offset in Hz for USB mode
   int bfo_offset_cwl = BFO_OFFSET_CWL;             // BFO offset in Hz for CWL mode
   int bfo_offset_cwu = BFO_OFFSET_CWU;             // BFO offset in Hz for CWU mode
-  bool clarifier_enabled = false;                  // whether or not the CLARIFIER pot is used
+  bool PBT_enabled = false;                        // whether or not the PBT pot is installed
   byte wpm = CW_SPEED;                             // CW keyer speed (words per minute)
   bool semiQSK = SEMI_QSK;                         // whether semi QSK is ON or OFF
   unsigned int POT_SPAN = TUNING_POT_SPAN;         // tuning pot span (kHz)
@@ -213,7 +213,7 @@ char c[17], b[10], printBuff[2][17];
    A4 (already in use for talking to the SI5351)
    A5 (already in use for talking to the SI5351)
    A6 (analog input) iis connected to a center pin of good quality 100K or 10K linear potentiometer with the two other ends connected to
-       ground and +5v lines available on the connector. This implements the CLARIFIER mechanism.
+       ground and +5v lines available on the connector. This implements the PBT mechanism.
    A7 (analog input) is connected to a center pin of good quality 100K or 10K linear (preferably 10-turn) potentiometer with the two other ends connected to
        ground and +5v lines available on the connector. This implements the TUNING mechanism.
 */
@@ -221,7 +221,7 @@ char c[17], b[10], printBuff[2][17];
 #define PTT_SENSE (A0)
 #define KEY (A1)
 #define FBUTTON (A3)
-#define CLARIFIER (A6)
+#define PBT (A6)
 #define ANALOG_TUNING (A7)
 
 /**
@@ -283,7 +283,7 @@ unsigned long vfoB;               // the frequency (Hz) of VFO B
 byte mode = LSB;                  // mode of the currently active VFO
 unsigned long bfo_freq;           // the frequency (Hz) of the BFO
 bool vfo_high;                    // whether the VFO is on the low or on the high side of the IF
-int clar_offset = 0;              // the offset applied to the BFO by the clarifier pot
+int clar_offset = 0;              // the offset applied to the BFO by the PBT pot
 int clar_offset_old = 0;
 bool inTx = false;                // whether or not we are in transmit mode
 bool keyDown = false;             // whether we have a key up or key down
@@ -1123,7 +1123,7 @@ void keyer() {
    3 short presses: VFO/BFO calibration
    4 short presses: toggle VFO setting (high or low side of IF)
    5 short presses: Set tuning range parameters (minimum dial frequency, max dial freq, tuning pot span)
-   6 short presses: enable/disable the CLARIFIER function
+   6 short presses: enable/disable the PBT function
    long press: exit SETTINGS menu - go back to NORMAL menu
 */
 
@@ -1236,7 +1236,7 @@ void checkButton() {
             printLine(1, "Set tuning range");
             break;
           case 16:
-            printLine(1, "Clarifier ON/OFF");
+            printLine(1, "PBT ON/OFF");
             break;
         }
       }
@@ -1324,9 +1324,9 @@ void checkButton() {
       set_tune_range();
       break;
 
-    case 16: // enable/disable CLARIFIER
-      u.clarifier_enabled = !u.clarifier_enabled;
-      if (u.clarifier_enabled)
+    case 16: // enable/disable PBT
+      u.PBT_enabled = !u.PBT_enabled;
+      if (u.PBT_enabled)
         printLine(1, "CLAR enabled");
       else
         printLine(1, "CLAR disabled");
@@ -2351,13 +2351,13 @@ void calibrate_touch_pads() {
   }
 }
 
-// This routine is for the CLARIFIER control from the frontpanel
-// It is only executed when the CLARIFIER is enabled from the SETTINGS menu
-void clarifier() {
+// This routine is for the PBT control from the frontpanel
+// It is only executed when the PBT is enabled from the SETTINGS menu
+void PassBandTuning() {
   if (inTx)
-    clar_offset = 0;                                 // no offset during TX (clarifier works only in RX)
+    clar_offset = 0;                                 // no offset during TX (PBT works only in RX)
   else
-    clar_offset = 2 * (analogRead(CLARIFIER) - 512); // read the analog voltage from the CLAR pot (zero is centre position)
+    clar_offset = 2 * (analogRead(PBT) - 512); // read the analog voltage from the CLAR pot (zero is centre position)
   if (abs(clar_offset - clar_offset_old) > 5) {
     SetSideBand();
     clar_offset_old = clar_offset;
@@ -2481,8 +2481,8 @@ void loop() {
       }
       checkCW();
       checkTX();
-      if (u.clarifier_enabled)
-        clarifier();
+      if (u.PBT_enabled)
+        PassBandTuning();
       if (keyeron)
         keyer();
       if (ritOn && !inTx)
