@@ -27,6 +27,7 @@ I develop and maintain ham radio software as a hobby and distribute it for free.
 ## Revision record
 
 v2.04
+- renamed "CLARIFIER" to "Passband Tuning (PBT)" as this seems a more appropriate name for this function
 - improved the code so that the si5351 does not keep receiving tuning updates once the frequency has reached the upper or lower limit
 
 v2.03
