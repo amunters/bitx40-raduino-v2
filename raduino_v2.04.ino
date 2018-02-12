@@ -283,8 +283,8 @@ unsigned long vfoB;               // the frequency (Hz) of VFO B
 byte mode = LSB;                  // mode of the currently active VFO
 unsigned long bfo_freq;           // the frequency (Hz) of the BFO
 bool vfo_high;                    // whether the VFO is on the low or on the high side of the IF
-int clar_offset = 0;              // the offset applied to the BFO by the PBT pot
-int clar_offset_old = 0;
+int PBT_offset = 0;               // the offset applied to the BFO by the PBT pot
+int PBT_offset_old = 0;
 bool inTx = false;                // whether or not we are in transmit mode
 bool keyDown = false;             // whether we have a key up or key down
 unsigned long TimeOut = 0;        // time in ms since last key down
@@ -1327,9 +1327,9 @@ void checkButton() {
     case 16: // enable/disable PBT
       u.PBT_enabled = !u.PBT_enabled;
       if (u.PBT_enabled)
-        printLine(1, "CLAR enabled");
+        printLine(1, "PBT enabled");
       else
-        printLine(1, "CLAR disabled");
+        printLine(1, "PBT disabled");
       delay(700);
       bleep(600, 50, 2);
       printLine(1, "--- SETTINGS ---");
@@ -1403,32 +1403,32 @@ void SetSideBand() {
   if (u.vfo_high) {
     switch (mode) {
       case USB:
-        bfo_freq = u.bfo_freq - clar_offset;
+        bfo_freq = u.bfo_freq - PBT_offset;
         break;
       case LSB:
-        bfo_freq = u.bfo_freq + u.bfo_offset_usb + clar_offset;
+        bfo_freq = u.bfo_freq + u.bfo_offset_usb + PBT_offset;
         break;
       case CWU:
-        bfo_freq = u.bfo_freq + u.bfo_offset_cwl - clar_offset;
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwl - PBT_offset;
         break;
       case CWL:
-        bfo_freq = u.bfo_freq + u.bfo_offset_cwu + clar_offset;
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwu + PBT_offset;
         break;
     }
   }
   else {
     switch (mode) {
       case LSB:
-        bfo_freq = u.bfo_freq - clar_offset;
+        bfo_freq = u.bfo_freq - PBT_offset;
         break;
       case USB:
-        bfo_freq = u.bfo_freq + u.bfo_offset_usb + clar_offset;
+        bfo_freq = u.bfo_freq + u.bfo_offset_usb + PBT_offset;
         break;
       case CWL:
-        bfo_freq = u.bfo_freq + u.bfo_offset_cwl - clar_offset;
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwl - PBT_offset;
         break;
       case CWU:
-        bfo_freq = u.bfo_freq + u.bfo_offset_cwu + clar_offset;
+        bfo_freq = u.bfo_freq + u.bfo_offset_cwu + PBT_offset;
         break;
     }
   }
@@ -2355,12 +2355,12 @@ void calibrate_touch_pads() {
 // It is only executed when the PBT is enabled from the SETTINGS menu
 void PassBandTuning() {
   if (inTx)
-    clar_offset = 0;                                 // no offset during TX (PBT works only in RX)
+    PBT_offset = 0;                                 // no offset during TX (PBT works only in RX)
   else
-    clar_offset = 2 * (analogRead(PBT) - 512); // read the analog voltage from the CLAR pot (zero is centre position)
-  if (abs(clar_offset - clar_offset_old) > 5) {
+    PBT_offset = 2 * (analogRead(PBT) - 512); // read the analog voltage from the PBT pot (zero is centre position)
+  if (abs(PBT_offset - PBT_offset_old) > 5) {
     SetSideBand();
-    clar_offset_old = clar_offset;
+    PBT_offset_old = PBT_offset;
   }
 }
 
