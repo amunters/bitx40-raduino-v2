@@ -4,7 +4,7 @@ This sketch implements digital BFO functionality to the BitX40. The original ana
 The BFO frequency is controlled by the sketch. The sketch will set the BFO frequency depending on the mode (LSB, USB, etc.). This has multiple advantages:
 - Adjustable BFO frequency allows for optimum alignment with the filter pass band in each mode
 - It is now possible to set the VFO to the high side of the IF in each mode => no images from 41m broadcast stations, less birdies
-- Possibility to add a Pass Band Tuning (PBT) pot to the front panel. The behaviour is somewhat similar to 'IF shift' as found on many commercial radios.
+- Possibility to add Pass Band Tuning (PBT) control to the front panel. The behaviour is somewhat similar to 'IF shift' as found on many commercial radios.
 
 First time builders: It is recommmended to first install the [raduino v1](https://github.com/amunters/bitx40) sketch and make sure that everything including the related mods work properly, before proceding with this v2 sketch.
 
