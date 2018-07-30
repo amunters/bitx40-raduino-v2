@@ -1,4 +1,4 @@
-# Raduino v2 for BitX40
+# Raduino v2 for BitX40 (Platformio compatible version)
 
 This sketch implements digital BFO functionality to the BitX40. The original analog BFO oscillator is disabled. Instead we use the CLK0 output of the si5351 to generate the BFO signal, and inject it into the BitX40 board.
 The BFO frequency is controlled by the sketch. The sketch will set the BFO frequency depending on the mode (LSB, USB, etc.). This has multiple advantages:
@@ -8,16 +8,23 @@ The BFO frequency is controlled by the sketch. The sketch will set the BFO frequ
 
 First time builders: It is recommmended to first install the [raduino v1](https://github.com/amunters/bitx40) sketch and make sure that everything including the related mods work properly, before proceding with this v2 sketch.
 
-**Note 1:** Unlike [raduino v1](https://github.com/amunters/bitx40), this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some additional minimal hardware modifications as outlined [below](operating-instructions.md) are required (v2 is not downward compatible with v1).
+**Note 1:** Unlike [raduino v1](https://github.com/amunters/bitx40), this sketch will not work on a unmodified out-of-the-box BITX40 + raduino board. Some additional minimal hardware modifications as outlined [below](doc/operating-instructions.md) are required (v2 is not downward compatible with v1).
 
 **Note 2:** Upgrading from raduino_v1 to v2: Existing hardware modifications as used in [raduino v1](https://github.com/amunters/bitx40) still work under v2. The wiring and pin connections are still the same, except the CAL wire (pin A2) is no longer used (v1 is upward compatible with v2).
 
 **Note 3:** The library [PinChangeInterrupt](https://playground.arduino.cc/Main/PinChangeInterrupt) is required for interrupt handling. Use your IDE to install it before compiling this sketch!
 
-![Hardware mod overview](hardware%20modification%20overview%20v2.PNG) 
+![Hardware mod overview](doc/hardware%20modification%20overview%20v2.PNG) 
 
-See the [operating and modification instructions](operating-instructions.md) for full details.
+See the [operating and modification instructions](doc/operating-instructions.md) for full details.
 
+## Upload
+Install platformio IDE from https://platformio.org/platformio-ide
+
+To upload code to raduino:
+```
+platforio run --target upload
+```
 ## Donate
 
 I develop and maintain ham radio software as a hobby and distribute it for free. However, if you like this software, please consider to donate a small amount to my son's home who stays in an institute for kids with an intellectual disability and autism. The money will be used for adapted toys, a tricycle, a trampoline or a swing. Your support will be highly appreciated by this group of 6 young adolescents!
