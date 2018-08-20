@@ -1,9 +1,9 @@
 #include <ClickEncoder.h>
-#include <LiquidCrystal.h>
-#include <LiquidCrystal_I2C.h>
 #include <PinChangeInterrupt.h>
 #include <TimerOne.h>
 #include <Wire.h>
+#include <hd44780.h>
+#include <hd44780ioClass/hd44780_I2Clcd.h>
 #include <si5351.h>
 
 #define MY_CALLSIGN "SP7WKY"
@@ -25,20 +25,21 @@
 #define BFO_CAL 0
 
 // Inputs
-#define PTT_SENSE (2)
-#define FBUTTON (13)
-#define FBUTTON2 -1
-#define TXRX A0
-#define CARRIER A1
+#define PTT_SENSE 7
+#define FBUTTON (A0)
+#define FBUTTON2 (A1)
+#define TXRX 5
+#define CARRIER 6
+#define ENC_BUTTON 9
 
-ClickEncoder encoder(10, 11, 9, 4, 1);
+ClickEncoder encoder(10, 11, ENC_BUTTON, 4, 1);
 ClickEncoder encoder2(8, 12, -1, 4, 1);
 
 DigitalButton button(FBUTTON);
 DigitalButton button2(FBUTTON2);
 DigitalButton ptt(PTT_SENSE);
 Si5351 si5351;
-LiquidCrystal_I2C lcd(LCD_ADDR, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+hd44780_I2Clcd lcd(LCD_ADDR);
 
 // Modes
 #define LSB (0)
@@ -54,10 +55,11 @@ byte mode = LSB;                             // mode of the currently active VFO
 unsigned long bfo_freq = BFOFREQ + BFO_CAL;  //  base bfo freq
 unsigned long bfoFreqWithOffset = bfo_freq;  // actual
 
-bool vfo_high = false;
+bool vfo_high = true;
 int PBT_offset = 0;
 int PBT_offset_old = 0;
 bool carrierEnabled = 0;
+bool txForceEnabled = 0;
 bool forceRefresh = false;
 
 unsigned long baseTune = 7100000UL;
@@ -86,29 +88,30 @@ void setFrequency() {
 }
 
 void SetSideBand() {
+  int pbtOffsetLocal = PBT_offset;
+  if(inTx){
+    pbtOffsetLocal = 0;
+  }
   bfoFreqWithOffset = bfo_freq;
   if (vfo_high) {
     switch (mode) {
       case USB:
-        bfoFreqWithOffset = bfoFreqWithOffset - PBT_offset;
+        bfoFreqWithOffset = bfoFreqWithOffset - pbtOffsetLocal;
         break;
       case LSB:
-        bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + PBT_offset;
+        bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + pbtOffsetLocal;
         break;
     }
   } else {
     switch (mode) {
       case LSB:
-        bfoFreqWithOffset = bfoFreqWithOffset - PBT_offset;
+        bfoFreqWithOffset = bfoFreqWithOffset - pbtOffsetLocal;
         break;
       case USB:
-        bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + PBT_offset;
+        bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + pbtOffsetLocal;
         break;
     }
   }
-
-  Serial.print("BFOFreq: ");
-  Serial.println(bfoFreqWithOffset);
   si5351.set_freq(bfoFreqWithOffset * 100ULL, SI5351_CLK0);
   setFrequency();
 }
@@ -127,32 +130,28 @@ void passBandTuning() {
     SetSideBand();
     forceRefresh = true;
     PBT_offset_old = PBT_offset;
-    return true;
   }
-  return false;
 }
 
 unsigned long old_freq;
 int lastMode = -1;
 
 void modeNormal() {
-  frequency += encoder.getValue() * freqMultip;
+  long changeInFreq = encoder.getValue() * freqMultip;
+  frequency += changeInFreq;
   if (frequency > MAX_FREQ) {
     frequency = MAX_FREQ;
   } else if (frequency < MIN_FREQ) {
     frequency = MIN_FREQ;
   }
-
   if (lastMode != NORMAL) {
-    modeNormalView();
+    forceRefresh = true;
   }
   passBandTuning();
   if (frequency != old_freq) {
     setFrequency();
     forceRefresh = true;
     old_freq = frequency;
-    Serial.print("Freq: ");
-    Serial.println(frequency);
   }
 
   int buttonState = encoder.getButton();
@@ -171,11 +170,12 @@ void modeNormal() {
         break;
 
       case ClickEncoder::DoubleClicked:
-        if (freqMultip >= 10000) {
-          freqMultip = 10000;
+        if (freqMultip >= 100) {
+          freqMultip = 100;
         } else {
           freqMultip *= 10;
         }
+        forceRefresh = true;
     }
   }
   lastMode = NORMAL;
@@ -186,21 +186,20 @@ void modeNormal() {
 }
 
 void modeNormalView() {
-  lcd.cursor();
-  lcd.clear();
+  lcd.blink_on();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
-  lcd.print("    ");
-  lcd.print(2 * PBT_offset);
+  lcd.print(" ");
+  lcd.print(bfo_freq + PBT_offset);
   lcd.setCursor(0, 1);
   if (mode == LSB) {
-    lcd.print("LSB");
+    lcd.print("LSB             ");
   } else if (mode == USB) {
-    lcd.print("USB");
+    lcd.print("USB             ");
   }
   if (carrierEnabled) {
-    lcd.setCursor(15, 1);
-    lcd.print('C');
+    lcd.setCursor(12, 1);
+    lcd.print("TUNE");
   }
   switch (freqMultip) {
     case 1:
@@ -236,26 +235,26 @@ void modeInTX() {
 }
 
 void modeInTXView() {
-  lcd.noCursor();
-  lcd.clear();
+  lcd.blink_off();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
+  lcd.print("         ");
   lcd.setCursor(0, 1);
   if (mode == LSB) {
-    lcd.print("LSB   TX");
+    lcd.print("LSB   TX        ");
   } else if (mode == USB) {
-    lcd.print("USB   TX");
+    lcd.print("USB   TX        ");
   }
   if (carrierEnabled) {
-    lcd.setCursor(15, 1);
-    lcd.print('C');
+    lcd.setCursor(12, 1);
+    lcd.print("TUNE");
   }
 }
 
 void checkTX() {
   int buttonState = ptt.getButton();
   if (buttonState == 0) {
-    inTx = false;
+    inTx = true;
   } else {
     inTx = false;
   }
@@ -263,9 +262,16 @@ void checkTX() {
 
 void checkCarrier() {
   int buttonState = button.getButton();
+  if(buttonState != 0){
+    Serial.print("Button state: ");
+    Serial.println(buttonState);
+  }
+  Serial.print("Button: ");
+  Serial.println(buttonState);
   if (buttonState == 5) {
     carrierEnabled = !carrierEnabled;
     digitalWrite(CARRIER, carrierEnabled);
+    digitalWrite(TXRX, carrierEnabled);
     forceRefresh = true;
   }
 }
@@ -274,6 +280,7 @@ void setup() {
   Serial.begin(9600);
   Timer1.initialize(1000);
   Timer1.attachInterrupt(timerIsr);
+  int status;
   lcd.begin(16, 2);
 
   analogReference(DEFAULT);
@@ -294,12 +301,11 @@ void setup() {
 
   pinMode(PTT_SENSE, INPUT);
   pinMode(TXRX, OUTPUT);
+  digitalWrite(TXRX, LOW);
   pinMode(CARRIER, OUTPUT);
   pinMode(FBUTTON, INPUT_PULLUP);
   pinMode(FBUTTON2, INPUT_PULLUP);
-  pinMode(9, INPUT_PULLUP);
-  // pinMode(A7, INPUT);
-  // pinMode(A6, INPUT);
+  pinMode(ENC_BUTTON, INPUT_PULLUP);
 
   digitalWrite(TXRX, 0);
   digitalWrite(CARRIER, 0);
