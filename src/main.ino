@@ -1,4 +1,6 @@
 #include <ClickEncoder.h>
+#include <DallasTemperature.h>
+#include <OneWire.h>
 #include <PinChangeInterrupt.h>
 #include <TimerOne.h>
 #include <Wire.h>
@@ -31,19 +33,24 @@
 #define TXRX 5
 #define CARRIER 6
 #define ENC_BUTTON 9
+#define TEMP_SENSOR (A2)
+#define PA_INPUT_RELAY 13
+OneWire oneWire(TEMP_SENSOR);
+DallasTemperature sensors(&oneWire);
 
 ClickEncoder encoder(10, 11, ENC_BUTTON, 4, 1);
 ClickEncoder encoder2(8, 12, -1, 4, 1);
 
 DigitalButton button(FBUTTON);
 DigitalButton button2(FBUTTON2);
-DigitalButton ptt(PTT_SENSE);
 Si5351 si5351;
 hd44780_I2Clcd lcd(LCD_ADDR);
 
 // Modes
 #define LSB (0)
 #define USB (1)
+#define LSB_H (2)
+#define USB_H (3)
 
 // Operation modes
 #define NORMAL (0)
@@ -51,16 +58,19 @@ hd44780_I2Clcd lcd(LCD_ADDR);
 #define SETTINGS (2)
 
 bool inTx = false;
-byte mode = LSB;                             // mode of the currently active VFO
-unsigned long bfo_freq = BFOFREQ + BFO_CAL;  //  base bfo freq
-unsigned long bfoFreqWithOffset = bfo_freq;  // actual
+byte mode = LSB;
+unsigned long bfo_freq = BFOFREQ + BFO_CAL;
+unsigned long bfoFreqWithOffset = bfo_freq;
+boolean paInputRelayState =
+    1;  // HIGH - 1 power source, LOW - 2 poer sources 12/24V
 
-bool vfo_high = true;
 int PBT_offset = 0;
 int PBT_offset_old = 0;
 bool carrierEnabled = 0;
 bool txForceEnabled = 0;
 bool forceRefresh = false;
+bool communicate = false;
+unsigned int communicateTimer = 0;
 
 unsigned long baseTune = 7100000UL;
 int RXshift = 0;
@@ -69,49 +79,70 @@ unsigned long frequency =
 int fine = 0;  // fine tune offset (Hz)
 int freqMultip = 10;
 
+// Temperature variables
+float paTemp = 0.0;
+int tempTimer = 0;
+bool tempCheckedInCycle = false;
+
+void resetComunicateView() {
+  communicate = false;
+  communicateTimer = 0;
+  forceRefresh = true;
+}
+
+void communicateView(String str1, String str2) {
+  lcd.noBlink();
+  lcd.setCursor(0, 0);
+  lcd.print(str1);
+  lcd.setCursor(0, 1);
+  lcd.print(str2);
+  communicateTimer = 0;
+  communicate = true;
+  forceRefresh = true;
+}
+
 void setFrequency() {
-  if (vfo_high) {
-    if (mode & 1)  // if we are in UPPER side band mode
+  switch (mode) {
+    case USB_H:
       si5351.set_freq((bfoFreqWithOffset + frequency - RXshift + fine) * 100ULL,
                       SI5351_CLK2);
-    else  // if we are in LOWER side band mode
+      break;
+    case LSB_H:
       si5351.set_freq((bfoFreqWithOffset + frequency + RXshift + fine) * 100ULL,
                       SI5351_CLK2);
-  } else {
-    if (mode & 1)  // if we are in UPPER side band mode
-      si5351.set_freq((bfoFreqWithOffset - frequency + RXshift - fine) * 100ULL,
-                      SI5351_CLK2);
-    else  // if we are in LOWER side band mode
+      break;
+    case LSB:
       si5351.set_freq((bfoFreqWithOffset - frequency - RXshift - fine) * 100ULL,
                       SI5351_CLK2);
+      break;
+    case USB:
+      si5351.set_freq((bfoFreqWithOffset - frequency + RXshift - fine) * 100ULL,
+                      SI5351_CLK2);
+      break;
   }
 }
 
 void SetSideBand() {
   int pbtOffsetLocal = PBT_offset;
-  if(inTx){
+  if (inTx) {
     pbtOffsetLocal = 0;
   }
   bfoFreqWithOffset = bfo_freq;
-  if (vfo_high) {
-    switch (mode) {
-      case USB:
-        bfoFreqWithOffset = bfoFreqWithOffset - pbtOffsetLocal;
-        break;
-      case LSB:
-        bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + pbtOffsetLocal;
-        break;
-    }
-  } else {
-    switch (mode) {
-      case LSB:
-        bfoFreqWithOffset = bfoFreqWithOffset - pbtOffsetLocal;
-        break;
-      case USB:
-        bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + pbtOffsetLocal;
-        break;
-    }
+  switch (mode) {
+    case USB_H:
+      bfoFreqWithOffset = bfoFreqWithOffset - pbtOffsetLocal;
+      break;
+    case LSB_H:
+      bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + pbtOffsetLocal;
+      break;
+    case LSB:
+      bfoFreqWithOffset = bfoFreqWithOffset - pbtOffsetLocal;
+      break;
+    case USB:
+      bfoFreqWithOffset = bfoFreqWithOffset + BFO_OFFSET_USB + pbtOffsetLocal;
+      break;
   }
+
   si5351.set_freq(bfoFreqWithOffset * 100ULL, SI5351_CLK0);
   setFrequency();
 }
@@ -128,12 +159,13 @@ void passBandTuning() {
 
   if (encoderValue != 0) {
     SetSideBand();
+    communicateView("BFO Frequency:  ",
+                    String(bfo_freq + PBT_offset) + "        ");
     forceRefresh = true;
     PBT_offset_old = PBT_offset;
   }
 }
 
-unsigned long old_freq;
 int lastMode = -1;
 
 void modeNormal() {
@@ -148,10 +180,11 @@ void modeNormal() {
     forceRefresh = true;
   }
   passBandTuning();
-  if (frequency != old_freq) {
+  if (changeInFreq != 0) {
+    Serial.println(changeInFreq);
     setFrequency();
+    resetComunicateView();
     forceRefresh = true;
-    old_freq = frequency;
   }
 
   int buttonState = encoder.getButton();
@@ -179,28 +212,42 @@ void modeNormal() {
     }
   }
   lastMode = NORMAL;
-  if (forceRefresh) {
+  if (forceRefresh && !communicate) {
     forceRefresh = false;
     modeNormalView();
   }
 }
 
 void modeNormalView() {
-  lcd.blink_on();
+  lcd.blink();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
   lcd.print(" ");
   lcd.print(bfo_freq + PBT_offset);
   lcd.setCursor(0, 1);
   if (mode == LSB) {
-    lcd.print("LSB             ");
+    lcd.print("LSB_L ");
   } else if (mode == USB) {
-    lcd.print("USB             ");
+    lcd.print("USB_L ");
+  } else if (mode == LSB_H) {
+    lcd.print("LSB_H ");
+  } else if (mode == USB_H) {
+    lcd.print("USB_H ");
   }
-  if (carrierEnabled) {
-    lcd.setCursor(12, 1);
-    lcd.print("TUNE");
+  if (paInputRelayState) {
+    lcd.print("INT  ");
+  } else {
+    lcd.print("EXT  ");
   }
+  lcd.print("    ");
+  lcd.setCursor(12, 1);
+  lcd.print(paTemp);
+  // if (carrierEnabled) {
+  //   lcd.print("TUNE");
+  // } else {
+  //   lcd.print("    ");
+
+  // }
   switch (freqMultip) {
     case 1:
       lcd.setCursor(6, 0);
@@ -230,30 +277,39 @@ void modeInTX() {
   lastMode = INTX;
   if (forceRefresh) {
     forceRefresh = false;
+    communicate = false;
+    communicateTimer = 0;
     modeInTXView();
   }
 }
 
 void modeInTXView() {
-  lcd.blink_off();
+  lcd.noBlink();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
   lcd.print("         ");
+  lcd.setCursor(11, 0);
+  lcd.print(paTemp);
   lcd.setCursor(0, 1);
   if (mode == LSB) {
-    lcd.print("LSB   TX        ");
+    lcd.print("LSB LOW  TX ");
   } else if (mode == USB) {
-    lcd.print("USB   TX        ");
+    lcd.print("USB LOW  TX ");
+  } else if (mode == LSB_H) {
+    lcd.print("LSB HIGH TX ");
+  } else if (mode == USB_H) {
+    lcd.print("USB HIGH TX ");
   }
   if (carrierEnabled) {
-    lcd.setCursor(12, 1);
     lcd.print("TUNE");
+  } else {
+    lcd.print("    ");
   }
 }
 
 void checkTX() {
-  int buttonState = ptt.getButton();
-  if (buttonState == 0) {
+  bool buttonState = digitalRead(PTT_SENSE);
+  if (buttonState == 1) {
     inTx = true;
   } else {
     inTx = false;
@@ -262,16 +318,46 @@ void checkTX() {
 
 void checkCarrier() {
   int buttonState = button.getButton();
-  if(buttonState != 0){
-    Serial.print("Button state: ");
-    Serial.println(buttonState);
-  }
-  Serial.print("Button: ");
-  Serial.println(buttonState);
   if (buttonState == 5) {
     carrierEnabled = !carrierEnabled;
-    digitalWrite(CARRIER, carrierEnabled);
     digitalWrite(TXRX, carrierEnabled);
+    if (carrierEnabled) {
+      delay(100);
+    }
+    digitalWrite(CARRIER, carrierEnabled);
+    forceRefresh = true;
+  }
+}
+
+void checkModeChange() {
+  int buttonState = button2.getButton();
+  if (buttonState == 5) {
+    mode += 1;
+    if (mode >= 4) {
+      mode = 0;
+    }
+    if (mode == LSB) {
+      communicateView("Mode:           ", "LSB     LOW VFO ");
+    } else if (mode == USB) {
+      communicateView("Mode:           ", "USB     LOW VFO ");
+    } else if (mode == LSB_H) {
+      communicateView("Mode:           ", "LSB     HIGH VFO");
+    } else if (mode == USB_H) {
+      communicateView("Mode:           ", "USB     HIGH VFO");
+    }
+    forceRefresh = true;
+    SetSideBand();
+  } else if (buttonState == 6) {
+    if (paInputRelayState) {
+      paInputRelayState = 0;
+      digitalWrite(PA_INPUT_RELAY, paInputRelayState);
+      communicateView("PA Power Source:", "EXTERNAL        ");
+
+    } else {
+      paInputRelayState = 1;
+      digitalWrite(PA_INPUT_RELAY, paInputRelayState);
+      communicateView("PA Power Source:", "INTERNAL 12V    ");
+    }
     forceRefresh = true;
   }
 }
@@ -280,14 +366,12 @@ void setup() {
   Serial.begin(9600);
   Timer1.initialize(1000);
   Timer1.attachInterrupt(timerIsr);
-  int status;
   lcd.begin(16, 2);
 
   analogReference(DEFAULT);
 
   encoder.setAccelerationEnabled(true);
   encoder2.setAccelerationEnabled(true);
-  old_freq = 0;
 
   si5351.init(SI5351_CRYSTAL_LOAD_8PF, SI5351BX_XTAL, SI5351BX_CAL);
   si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
@@ -306,9 +390,13 @@ void setup() {
   pinMode(FBUTTON, INPUT_PULLUP);
   pinMode(FBUTTON2, INPUT_PULLUP);
   pinMode(ENC_BUTTON, INPUT_PULLUP);
+  pinMode(PA_INPUT_RELAY, OUTPUT);
+  digitalWrite(PA_INPUT_RELAY, HIGH);
 
   digitalWrite(TXRX, 0);
   digitalWrite(CARRIER, 0);
+  sensors.begin();
+  sensors.setWaitForConversion(false);
 }
 
 void loop() {
@@ -319,6 +407,22 @@ void loop() {
   }
   checkTX();
   checkCarrier();
+  checkModeChange();
+
+  if (tempTimer >= 5000 && !tempCheckedInCycle) {
+    paTemp = sensors.getTempCByIndex(0);
+    tempCheckedInCycle = true;
+    if (carrierEnabled && paTemp > 70.0) {
+      digitalWrite(CARRIER, LOW);
+      digitalWrite(TXRX, LOW);
+    }
+    forceRefresh = true;
+  }
+  if (tempTimer >= 10000) {
+    sensors.requestTemperatures();
+    tempTimer = 0;
+    tempCheckedInCycle = false;
+  }
 }
 
 void timerIsr() {
@@ -326,5 +430,11 @@ void timerIsr() {
   encoder2.service();
   button.service();
   button2.service();
-  ptt.service();
+  tempTimer++;
+  if (communicate) {
+    communicateTimer++;
+  }
+  if (communicateTimer >= 2000) {
+    resetComunicateView();
+  }
 }
