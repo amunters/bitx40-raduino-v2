@@ -341,6 +341,7 @@ To reset all user settings to "factory" values, press and hold the Function butt
 * Mode LSB for both VFO A and B
 * CW side tone: 800 Hz
 * CW key-type: Straight key
+* CW keyer speed: 16 WPM
 * Touch sensors: OFF
 * Auto-space: OFF
 * semiQSK: ON
