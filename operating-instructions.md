@@ -73,6 +73,7 @@ The first 11 pins have no headers (pads only):
 * output D5: CW Side Tone
 * input D4: CW SPOT Button
 * input D3: "dah" (paddle)
+* output D2: Pulse for capacitive touch keyer or paddle
 * output CLK0, BFO signal
 * GND
 
