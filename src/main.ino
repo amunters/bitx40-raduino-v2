@@ -28,12 +28,12 @@
 
 // Inputs
 #define PTT_SENSE 7
-#define FBUTTON (A0)
-#define FBUTTON2 (A1)
+#define FBUTTON 4
+#define FBUTTON2 3
 #define TXRX 5
 #define CARRIER 6
 #define ENC_BUTTON 9
-#define TEMP_SENSOR (A2)
+#define TEMP_SENSOR 2
 #define PA_INPUT_RELAY 13
 OneWire oneWire(TEMP_SENSOR);
 DallasTemperature sensors(&oneWire);
@@ -58,7 +58,7 @@ hd44780_I2Clcd lcd(LCD_ADDR);
 #define SETTINGS (2)
 
 bool inTx = false;
-byte mode = LSB;
+byte mode = LSB_H;
 unsigned long bfo_freq = BFOFREQ + BFO_CAL;
 unsigned long bfoFreqWithOffset = bfo_freq;
 boolean paInputRelayState =
@@ -222,8 +222,7 @@ void modeNormalView() {
   lcd.blink();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
-  lcd.print(" ");
-  lcd.print(bfo_freq + PBT_offset);
+  lcd.print("         ");
   lcd.setCursor(0, 1);
   if (mode == LSB) {
     lcd.print("LSB_L ");
@@ -242,12 +241,6 @@ void modeNormalView() {
   lcd.print("    ");
   lcd.setCursor(12, 1);
   lcd.print(paTemp);
-  // if (carrierEnabled) {
-  //   lcd.print("TUNE");
-  // } else {
-  //   lcd.print("    ");
-
-  // }
   switch (freqMultip) {
     case 1:
       lcd.setCursor(6, 0);
@@ -284,27 +277,28 @@ void modeInTX() {
 }
 
 void modeInTXView() {
+  lcd.clear;
   lcd.noBlink();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
   lcd.print("         ");
-  lcd.setCursor(11, 0);
-  lcd.print(paTemp);
   lcd.setCursor(0, 1);
   if (mode == LSB) {
-    lcd.print("LSB LOW  TX ");
+    lcd.print("LSB_L ");
   } else if (mode == USB) {
-    lcd.print("USB LOW  TX ");
+    lcd.print("USB_L ");
   } else if (mode == LSB_H) {
-    lcd.print("LSB HIGH TX ");
+    lcd.print("LSB_H ");
   } else if (mode == USB_H) {
-    lcd.print("USB HIGH TX ");
+    lcd.print("USB_H ");
   }
   if (carrierEnabled) {
     lcd.print("TUNE");
   } else {
     lcd.print("    ");
   }
+  lcd.setCursor(11, 0);
+  lcd.print(paTemp);
 }
 
 void checkTX() {
@@ -331,7 +325,7 @@ void checkCarrier() {
 
 void checkModeChange() {
   int buttonState = button2.getButton();
-  if (buttonState == 5) {
+  if (buttonState == 6) {
     mode += 1;
     if (mode >= 4) {
       mode = 0;
@@ -347,7 +341,7 @@ void checkModeChange() {
     }
     forceRefresh = true;
     SetSideBand();
-  } else if (buttonState == 6) {
+  } else if (buttonState == 5) {
     if (paInputRelayState) {
       paInputRelayState = 0;
       digitalWrite(PA_INPUT_RELAY, paInputRelayState);
@@ -359,6 +353,23 @@ void checkModeChange() {
       communicateView("PA Power Source:", "INTERNAL 12V    ");
     }
     forceRefresh = true;
+  }
+}
+
+void checkTemperature() {
+  if (tempTimer >= 5000 && !tempCheckedInCycle) {
+    paTemp = sensors.getTempCByIndex(0);
+    tempCheckedInCycle = true;
+    if (carrierEnabled && paTemp > 70.0) {
+      digitalWrite(CARRIER, LOW);
+      digitalWrite(TXRX, LOW);
+    }
+    forceRefresh = true;
+  }
+  if (tempTimer >= 10000) {
+    sensors.requestTemperatures();
+    tempTimer = 0;
+    tempCheckedInCycle = false;
   }
 }
 
@@ -408,21 +419,7 @@ void loop() {
   checkTX();
   checkCarrier();
   checkModeChange();
-
-  if (tempTimer >= 5000 && !tempCheckedInCycle) {
-    paTemp = sensors.getTempCByIndex(0);
-    tempCheckedInCycle = true;
-    if (carrierEnabled && paTemp > 70.0) {
-      digitalWrite(CARRIER, LOW);
-      digitalWrite(TXRX, LOW);
-    }
-    forceRefresh = true;
-  }
-  if (tempTimer >= 10000) {
-    sensors.requestTemperatures();
-    tempTimer = 0;
-    tempCheckedInCycle = false;
-  }
+  checkTemperature();
 }
 
 void timerIsr() {
