@@ -7,7 +7,9 @@
 #include <hd44780.h>
 #include <hd44780ioClass/hd44780_I2Clcd.h>
 #include <si5351.h>
+#include "BitxBoard.h"
 
+// MAIN PROP
 #define MY_CALLSIGN "SP7WKY"
 #define MIN_FREQ 7000000UL
 #define MAX_FREQ 7200000UL
@@ -19,6 +21,7 @@
 #define BB1(x) ((uint8_t)(x >> 8))
 #define BB2(x) ((uint8_t)(x >> 16))
 
+// LCD PROPS
 #define LCD_ADDR 0x3C  // I2C address of Si5351   (typical)
 
 // If using 27mhz crystal, set XTAL=27000000, MSA=33.  Then vco=891mhz
@@ -27,7 +30,7 @@
 #define BFO_CAL 0
 
 // Inputs
-#define PTT_SENSE 7
+#define PTT_SENSE 7  // Checking if radio is transmiting
 #define FBUTTON 4
 #define FBUTTON2 3
 #define TXRX 5
@@ -35,12 +38,17 @@
 #define ENC_BUTTON 9
 #define TEMP_SENSOR 2
 #define PA_INPUT_RELAY 13
+#define KEYBOARD A0
+#define PTT_BUTTON A1  // Checking if PTT button is clicked
+#define GENERIC_BUTTON A2
+
 OneWire oneWire(TEMP_SENSOR);
 DallasTemperature sensors(&oneWire);
 
+// ENCODER
 ClickEncoder encoder(10, 11, ENC_BUTTON, 4, 1);
 ClickEncoder encoder2(8, 12, -1, 4, 1);
-
+// BUTTONS
 DigitalButton button(FBUTTON);
 DigitalButton button2(FBUTTON2);
 Si5351 si5351;
@@ -62,7 +70,7 @@ byte mode = LSB_H;
 unsigned long bfo_freq = BFOFREQ + BFO_CAL;
 unsigned long bfoFreqWithOffset = bfo_freq;
 boolean paInputRelayState =
-    1;  // HIGH - 1 power source, LOW - 2 poer sources 12/24V
+    1;  // HIGH - 1 power source, LOW - 2 power sources 12/24V
 
 int PBT_offset = 0;
 int PBT_offset_old = 0;
@@ -70,6 +78,8 @@ bool carrierEnabled = 0;
 bool txForceEnabled = 0;
 bool forceRefresh = false;
 bool communicate = false;
+bool debounceFlag = false;
+unsigned int debounceTimer = 0;
 unsigned int communicateTimer = 0;
 
 unsigned long baseTune = 7100000UL;
@@ -85,12 +95,16 @@ int tempTimer = 0;
 bool tempCheckedInCycle = false;
 
 void resetComunicateView() {
+  // Serial.println("resetComunicateView");
+
   communicate = false;
   communicateTimer = 0;
   forceRefresh = true;
 }
 
 void communicateView(String str1, String str2) {
+  // Serial.println("communicateView");
+
   lcd.noBlink();
   lcd.setCursor(0, 0);
   lcd.print(str1);
@@ -102,6 +116,8 @@ void communicateView(String str1, String str2) {
 }
 
 void setFrequency() {
+  // Serial.println("setFrequency");
+
   switch (mode) {
     case USB_H:
       si5351.set_freq((bfoFreqWithOffset + frequency - RXshift + fine) * 100ULL,
@@ -123,6 +139,8 @@ void setFrequency() {
 }
 
 void SetSideBand() {
+  // Serial.println("SetSideBand");
+
   int pbtOffsetLocal = PBT_offset;
   if (inTx) {
     pbtOffsetLocal = 0;
@@ -148,6 +166,8 @@ void SetSideBand() {
 }
 
 void passBandTuning() {
+  // Serial.println("passBandTuning");
+
   int encoderValue = 0;
   encoderValue = encoder2.getValue();
   PBT_offset += encoderValue;
@@ -169,6 +189,8 @@ void passBandTuning() {
 int lastMode = -1;
 
 void modeNormal() {
+  // Serial.println("modeNormal");
+
   long changeInFreq = encoder.getValue() * freqMultip;
   frequency += changeInFreq;
   if (frequency > MAX_FREQ) {
@@ -181,7 +203,7 @@ void modeNormal() {
   }
   passBandTuning();
   if (changeInFreq != 0) {
-    Serial.println(changeInFreq);
+    // Serial.println(changeInFreq);
     setFrequency();
     resetComunicateView();
     forceRefresh = true;
@@ -219,6 +241,8 @@ void modeNormal() {
 }
 
 void modeNormalView() {
+  // Serial.println("modeNormalView");
+
   lcd.blink();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
@@ -263,6 +287,8 @@ void modeNormalView() {
 void modeOptions() {}
 
 void modeInTX() {
+  // Serial.println("modeInTX");
+
   passBandTuning();
   if (lastMode != INTX) {
     forceRefresh = true;
@@ -277,7 +303,9 @@ void modeInTX() {
 }
 
 void modeInTXView() {
-  lcd.clear;
+  // Serial.println("modeInTXView");
+
+  // lcd.clear();
   lcd.noBlink();
   lcd.setCursor(0, 0);
   lcd.print(frequency);
@@ -295,15 +323,22 @@ void modeInTXView() {
   if (carrierEnabled) {
     lcd.print("TUNE");
   } else {
-    lcd.print("    ");
+    
+    lcd.print(" TX ");
   }
-  lcd.setCursor(11, 0);
+  lcd.setCursor(12, 1);
   lcd.print(paTemp);
 }
 
 void checkTX() {
-  bool buttonState = digitalRead(PTT_SENSE);
-  if (buttonState == 1) {
+  // Serial.println("checkTX");
+
+  if (carrierEnabled || !digitalRead(PTT_BUTTON)) {
+    digitalWrite(TXRX, HIGH);
+  } else {
+    digitalWrite(TXRX, LOW);
+  }
+  if (digitalRead(PTT_SENSE)) {
     inTx = true;
   } else {
     inTx = false;
@@ -311,6 +346,7 @@ void checkTX() {
 }
 
 void checkCarrier() {
+  // Serial.println("checkCarrier");
   int buttonState = button.getButton();
   if (buttonState == 5) {
     carrierEnabled = !carrierEnabled;
@@ -323,40 +359,52 @@ void checkCarrier() {
   }
 }
 
+void changeMode(byte newMode) {
+  // Serial.println("changeMode");
+  mode = newMode;
+  if (mode >= 4) {
+    mode = 0;
+  }
+  if (mode == LSB) {
+    communicateView("Mode:           ", "LSB     LOW VFO ");
+  } else if (mode == USB) {
+    communicateView("Mode:           ", "USB     LOW VFO ");
+  } else if (mode == LSB_H) {
+    communicateView("Mode:           ", "LSB     HIGH VFO");
+  } else if (mode == USB_H) {
+    communicateView("Mode:           ", "USB     HIGH VFO");
+  }
+  SetSideBand();
+}
+
+void changePAPowerSource(bool internal) {
+  // Serial.println("changePAPowerSource");
+
+  if (internal) {
+    paInputRelayState = 1;
+    digitalWrite(PA_INPUT_RELAY, paInputRelayState);
+    communicateView("PA Power Source:", "INTERNAL 12V    ");
+  } else {
+    paInputRelayState = 0;
+    digitalWrite(PA_INPUT_RELAY, paInputRelayState);
+    communicateView("PA Power Source:", "EXTERNAL        ");
+  }
+  forceRefresh = true;
+}
+
 void checkModeChange() {
+  // Serial.println("checkModeChange");
+
   int buttonState = button2.getButton();
   if (buttonState == 6) {
-    mode += 1;
-    if (mode >= 4) {
-      mode = 0;
-    }
-    if (mode == LSB) {
-      communicateView("Mode:           ", "LSB     LOW VFO ");
-    } else if (mode == USB) {
-      communicateView("Mode:           ", "USB     LOW VFO ");
-    } else if (mode == LSB_H) {
-      communicateView("Mode:           ", "LSB     HIGH VFO");
-    } else if (mode == USB_H) {
-      communicateView("Mode:           ", "USB     HIGH VFO");
-    }
-    forceRefresh = true;
-    SetSideBand();
+    changeMode(mode + 1);
   } else if (buttonState == 5) {
-    if (paInputRelayState) {
-      paInputRelayState = 0;
-      digitalWrite(PA_INPUT_RELAY, paInputRelayState);
-      communicateView("PA Power Source:", "EXTERNAL        ");
-
-    } else {
-      paInputRelayState = 1;
-      digitalWrite(PA_INPUT_RELAY, paInputRelayState);
-      communicateView("PA Power Source:", "INTERNAL 12V    ");
-    }
-    forceRefresh = true;
+    changePAPowerSource(!paInputRelayState);
   }
 }
 
 void checkTemperature() {
+  // Serial.println("checkTemperature()");
   if (tempTimer >= 5000 && !tempCheckedInCycle) {
     paTemp = sensors.getTempCByIndex(0);
     tempCheckedInCycle = true;
@@ -402,6 +450,8 @@ void setup() {
   pinMode(FBUTTON2, INPUT_PULLUP);
   pinMode(ENC_BUTTON, INPUT_PULLUP);
   pinMode(PA_INPUT_RELAY, OUTPUT);
+  pinMode(PTT_BUTTON, INPUT_PULLUP);
+  pinMode(GENERIC_BUTTON, INPUT_PULLUP);
   digitalWrite(PA_INPUT_RELAY, HIGH);
 
   digitalWrite(TXRX, 0);
@@ -411,6 +461,7 @@ void setup() {
 }
 
 void loop() {
+  // Serial.println("loop");
   if (inTx) {
     modeInTX();
   } else {
@@ -420,6 +471,133 @@ void loop() {
   checkCarrier();
   checkModeChange();
   checkTemperature();
+  if (debounceFlag) {
+    checkKeyboard();
+  }
+}
+
+char convertKeyboardKeyFromRead(int keyboardValue) {
+  if (65 <= keyboardValue && keyboardValue <= 67) {  // 1
+    return '1';
+  } else if (60 <= keyboardValue && keyboardValue <= 63) {  // 2
+    return '2';
+  } else if (57 <= keyboardValue && keyboardValue <= 58) {  // 3
+    return '3';
+  } else if (95 <= keyboardValue && keyboardValue <= 100) {  // 4
+    return '4';
+  } else if (86 <= keyboardValue && keyboardValue <= 90) {  // 5
+    return '5';
+  } else if (79 <= keyboardValue && keyboardValue <= 83) {  // 6
+    return '6';
+  } else if (175 <= keyboardValue && keyboardValue <= 182) {  // 7
+    return '7';
+  } else if (148 <= keyboardValue && keyboardValue <= 153) {  // 8
+    return '8';
+  } else if (128 <= keyboardValue && keyboardValue <= 135) {  // 9
+    return '9';
+  } else if (505 <= keyboardValue && keyboardValue <= 515) {  // 0
+    return '0';
+  } else if (1008 <= keyboardValue && keyboardValue <= 1017) {  // *
+    return '*';
+  } else if (335 <= keyboardValue && keyboardValue <= 343) {  // #
+    return '#';
+  } else if (53 <= keyboardValue && keyboardValue <= 55) {  // A
+    return 'A';
+  } else if (73 <= keyboardValue && keyboardValue <= 77) {  // B
+    return 'B';
+  } else if (111 <= keyboardValue && keyboardValue <= 119) {  // C
+    return 'C';
+  } else if (250 <= keyboardValue && keyboardValue <= 260) {  // D
+    return 'D';
+  }
+  return 0;
+}
+
+void checkKeyboard() {
+  // Serial.println("checkKeyboard");
+
+  char keyboardValue = convertKeyboardKeyFromRead(analogRead(KEYBOARD));
+  char keyboardValue2 = convertKeyboardKeyFromRead(analogRead(KEYBOARD));
+  char keyboardValue3 = convertKeyboardKeyFromRead(analogRead(KEYBOARD));
+
+  if (keyboardValue == keyboardValue2 && keyboardValue2 == keyboardValue3 &&
+      keyboardValue == '1') {  // 1
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '2') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '3') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '4') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '5') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '6') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '7') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '8') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '9') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '0') {
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '*') {
+    debounceFlag = false;
+    carrierEnabled = !carrierEnabled;
+    digitalWrite(TXRX, carrierEnabled);
+    if (carrierEnabled) {
+      delay(100);
+    }
+    digitalWrite(CARRIER, carrierEnabled);
+    forceRefresh = true;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == '#') {
+    changePAPowerSource(!paInputRelayState);
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == 'A') {
+    changeMode(LSB_H);
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == 'B') {
+    changeMode(USB_H);
+    SetSideBand();
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == 'C') {
+    changeMode(LSB);
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  } else if (keyboardValue == keyboardValue2 &&
+             keyboardValue2 == keyboardValue3 && keyboardValue == 'D') {
+    changeMode(USB);
+    debounceFlag = false;
+    // Serial.println(keyboardValue);
+  }
 }
 
 void timerIsr() {
@@ -430,6 +608,13 @@ void timerIsr() {
   tempTimer++;
   if (communicate) {
     communicateTimer++;
+  }
+  if (!debounceFlag) {
+    debounceTimer++;
+    if (debounceTimer >= 200) {
+      debounceFlag = true;
+      debounceTimer = 0;
+    }
   }
   if (communicateTimer >= 2000) {
     resetComunicateView();
