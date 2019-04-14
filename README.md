@@ -14,6 +14,8 @@ First time builders: It is recommmended to first install the [raduino v1](https:
 
 **Note 3:** The library [PinChangeInterrupt](https://playground.arduino.cc/Main/PinChangeInterrupt) is required for interrupt handling. Use your IDE to install it before compiling this sketch!
 
+**Note 4:** Instead of compiling and uploading using the IDE, you can also simply install the [precompiled binary (hex) file](raduino_v2.04.ino.with_bootloader.eightanaloginputs.hex) using [xLoader](http://xloader.russemotto.com/).
+
 ![Hardware mod overview](hardware%20modification%20overview%20v2.PNG) 
 
 See the [operating and modification instructions](operating-instructions.md) for full details.
