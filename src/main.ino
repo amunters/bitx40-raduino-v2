@@ -51,6 +51,8 @@ ClickEncoder encoder2(8, 12, -1, 4, 1);
 // BUTTONS
 DigitalButton button(FBUTTON);
 DigitalButton button2(FBUTTON2);
+DigitalButton button3(GENERIC_BUTTON);
+
 Si5351 si5351;
 hd44780_I2Clcd lcd(LCD_ADDR);
 
@@ -323,7 +325,6 @@ void modeInTXView() {
   if (carrierEnabled) {
     lcd.print("TUNE");
   } else {
-    
     lcd.print(" TX ");
   }
   lcd.setCursor(12, 1);
@@ -392,14 +393,26 @@ void changePAPowerSource(bool internal) {
   forceRefresh = true;
 }
 
-void checkModeChange() {
+void checkButtons() {
   // Serial.println("checkModeChange");
 
   int buttonState = button2.getButton();
-  if (buttonState == 6) {
-    changeMode(mode + 1);
-  } else if (buttonState == 5) {
-    changePAPowerSource(!paInputRelayState);
+  int buttonState2 = button3.getButton();
+  if (buttonState != 0) {
+    if (freqMultip <= 1) {
+      freqMultip = 1;
+    } else {
+      freqMultip /= 10;
+    }
+    forceRefresh = true;
+  }
+  if (buttonState2 != 0) {
+    if (freqMultip >= 1000) {
+      freqMultip = 1000;
+    } else {
+      freqMultip *= 10;
+    }
+    forceRefresh = true;
   }
 }
 
@@ -431,6 +444,10 @@ void setup() {
 
   encoder.setAccelerationEnabled(true);
   encoder2.setAccelerationEnabled(true);
+  button2.setButtonHeldEnabled(false);
+  button2.setDoubleClickEnabled(false);
+  button3.setButtonHeldEnabled(false);
+  button3.setDoubleClickEnabled(false);
 
   si5351.init(SI5351_CRYSTAL_LOAD_8PF, SI5351BX_XTAL, SI5351BX_CAL);
   si5351.set_pll(SI5351_PLL_FIXED, SI5351_PLLA);
@@ -469,7 +486,7 @@ void loop() {
   }
   checkTX();
   checkCarrier();
-  checkModeChange();
+  checkButtons();
   checkTemperature();
   if (debounceFlag) {
     checkKeyboard();
@@ -605,6 +622,7 @@ void timerIsr() {
   encoder2.service();
   button.service();
   button2.service();
+  button3.service();
   tempTimer++;
   if (communicate) {
     communicateTimer++;
